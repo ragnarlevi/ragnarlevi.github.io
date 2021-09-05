@@ -242,7 +242,7 @@ footer {
     /* background-color: #393D49; */
     background-color: #2F4056;
     padding: 20px 0 20px;
-    margin-top: auto;
+    margin: 45px 0 0 0;
     width:100%;
     text-align: center;
     border-bottom: var(--border-width) solid var(--accent);
@@ -253,8 +253,8 @@ footer {
 }
 
 #content {
-    position:relative;
-    height: 88%;
+    height: auto;
+    min-height: 120%;
 }
 /* If we want to  */
 /* #content:after {
