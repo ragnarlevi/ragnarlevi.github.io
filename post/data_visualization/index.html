@@ -1,0 +1,1082 @@
+<html>
+<head>
+<meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<title>My Site - Data Visualization and Data Reduction </title>
+<meta content="Dimension Reduction,Visualization,Data Analysis" name=keywords>
+<meta content="My Site - Introduction In this notebook I will be trying out some dimensionality reduction techniques which can be used for modelling and/or data visualization. Dimensional reduction occupies a central position in many fields. In essence, the goal is to change the representation of data sets, originally in a form involving a large number of variables, into a low-dimensional description. The main difference between data reduction and data visualization is that some data visualization techniques can not be used on unseen data, thus they will not be useful in the modelling part." name=description>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<script type=text/x-mathjax-config>
+        MathJax.Hub.Config({
+            extensions: ["tex2jax.js"],
+            jax: ["input/TeX", "output/HTML-CSS"],
+            tex2jax: {
+                inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+                displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+                processEscapes: true
+            },
+            "HTML-CSS": { availableFonts: ["TeX"] }
+        });
+    </script>
+<script src=https://cdn.jsdelivr.net/npm/mathjax@3.0.5/es5/tex-mml-chtml.js integrity="sha256-HGLuEfFcsUJGhvB8cQ8nr0gai9EucOOaIxFw7qxmd+w=" crossorigin=anonymous></script>
+<link rel=stylesheet href=/layui/css/layui.css>
+<link rel=stylesheet href=/self/css/default.css>
+<script src=/layui/layui.js></script>
+<link rel=stylesheet async href=/self/css/markdown.min.css>
+<link rel=stylesheet async href=/self/css/gallery.css>
+<script src=https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin=anonymous></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css integrity="sha256-eZrrJcwDc/3uDhsdt61sL2oOBY362qM3lon1gyExkL0=" crossorigin=anonymous>
+<script async src=https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js integrity="sha256-h2tMEmhemR2IN4wbbdNjj9LaDIjzwk2hralQwfJmBOE=" crossorigin=anonymous></script></head>
+<body>
+<header class="layui-header layui-bg-cyan">
+<a class=nav-self-logo href=/>
+My Site
+</a>
+<ul class="layui-nav layui-layout-right layui-bg-cyan" lay-filter>
+<li class=layui-nav-item id=nav_big><a href=/post/>Posts</a></li>
+<li class=layui-nav-item id=nav_big><a href=/about/>About</a></li>
+<li class=layui-nav-item id=nav_small>
+<a href=javascript:;>
+<i class="layui-icon layui-icon-app" style=font-size:24px></i>
+</a>
+<dl class=layui-nav-child>
+<dd><a href=/post/>Posts</a></dd>
+<dd><a href=/about/>About</a></dd>
+</dl>
+</li>
+</ul>
+</header>
+<script>layui.use('element',function(){var a=layui.element})</script>
+<div id=content style=min-height:80%>
+<div class=layui-container style=margin-bottom:10px>
+<div class="layui-row layui-col-space10">
+<div class="layui-col-md8 layui-col-sm12 layui-col-xs12">
+<div class="layui-card single-card">
+<br>
+<blockquote class="self-elem-quote self-elem-quote-bg-red markdown-body single-title">
+<h1>Data Visualization and Data Reduction</h1>
+<h3 style=margin-top:10px;margin-bottom:10px>
+<i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<span>2021-08-30</span>
+<i class="layui-icon layui-icon-list" style=font-size:32px;vertical-align:-3px></i>
+<a href=/categories/data-analysis/>
+<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Data Analysis</span>
+</a>
+<i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
+<a href=/tags/dimension-reduction/>
+<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Dimension Reduction</span>
+</a>
+<a href=/tags/visualization/>
+<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Visualization</span>
+</a>
+</h3>
+</blockquote>
+<div class="layui-card-body markdown-body single-content">
+<h1 id=introduction>Introduction</h1>
+<p>In this notebook I will be trying out some dimensionality reduction techniques which can be used for modelling and/or data visualization. Dimensional reduction occupies a central position in many fields. In essence, the goal is to change the representation of data sets, originally in a form involving a large number of variables, into a low-dimensional description. The main difference between data reduction and data visualization is that some data visualization techniques can not be used on unseen data, thus they will not be useful in the modelling part. Data visualization is still an import aspect in every modelling task as discovering patterns at an early stage helps to guide the next steps of data science. If categories are well-separated the visualization method, machine learning is likely to be able to find a mapping from an unseen new data point to its value. Given the right prediction algorithm, we can then expect to achieve high accuracy.</p>
+<p>The methods can be either linear or nonlinear. Non-linear methods are often used as data points seldom live on linear manifolds. However, non-linear methods can be very sensitive to hyper-parameters. We also want the methods to preserve local structures because in many applications, distances of points that are far apart are meaningless, and therefore need not be preserved. We should keep in mind that since we often have many knobs to tune, we can easily fall into the trap of over-tuning until we see what you wanted to see. This is especially true for the non-linear method.</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#f92672>import</span> pandas <span style=color:#66d9ef>as</span> pd
+
+<span style=color:#f92672>import</span> numpy <span style=color:#66d9ef>as</span> np
+
+<span style=color:#f92672>import</span> matplotlib.pyplot <span style=color:#66d9ef>as</span> plt
+
+<span style=color:#f92672>from</span> sklearn.decomposition <span style=color:#f92672>import</span> KernelPCA, PCA
+
+<span style=color:#f92672>from</span> sklearn.manifold <span style=color:#f92672>import</span> MDS, Isomap
+
+<span style=color:#f92672>from</span> sklearn.metrics.pairwise <span style=color:#f92672>import</span> euclidean_distances
+
+<span style=color:#f92672>from</span> scipy.spatial <span style=color:#f92672>import</span> distance_matrix
+
+<span style=color:#f92672>import</span> seaborn <span style=color:#66d9ef>as</span> sns
+
+<span style=color:#f92672>from</span> pandas.api.types <span style=color:#f92672>import</span> is_numeric_dtype
+
+<span style=color:#f92672>import</span> matplotlib.patches <span style=color:#66d9ef>as</span> mpatches
+
+<span style=color:#f92672>from</span> scipy.linalg <span style=color:#f92672>import</span> eigh, svd
+</code></pre></div><h1 id=ghoul-data>Ghoul data</h1>
+<p>We will work with a very basic data set just to capture the main ideas. In real life however multiple data tweeking and munging needs to be done beforehand, which will probably be more time consuming than the actual modelling part. We are given data on creatures and the goal is to classify the creature type, they can either be Ghost, Ghoul, or Goblin (<a href=https://www.kaggle.com/c/ghouls-goblins-and-ghosts-boo/data)>https://www.kaggle.com/c/ghouls-goblins-and-ghosts-boo/data)</a>. We have 4 numerical features: bone_length, rotting_flesh, hair_length, has_soul (percentage of soul in creature) and 1 non-ordinal categorical variable: color (dominant color of the creature):</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>creatures_train <span style=color:#f92672>=</span> pd<span style=color:#f92672>.</span>read_csv(<span style=color:#e6db74>&#34;data/creatures_train.csv&#34;</span>)
+
+creatures_train<span style=color:#f92672>.</span>head()
+
+sns<span style=color:#f92672>.</span>pairplot(creatures_train, hue<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;type&#34;</span>, height<span style=color:#f92672>=</span><span style=color:#ae81ff>2</span>)
+
+
+
+creatures_train_centered <span style=color:#f92672>=</span> creatures_train<span style=color:#f92672>.</span>copy()
+
+
+
+<span style=color:#66d9ef>for</span> col <span style=color:#f92672>in</span> creatures_train_centered<span style=color:#f92672>.</span>columns:
+
+    <span style=color:#66d9ef>if</span> is_numeric_dtype(creatures_train_centered[col]):
+
+        creatures_train_centered[col] <span style=color:#f92672>=</span> \
+
+            (creatures_train[col] <span style=color:#f92672>-</span> creatures_train[col]<span style=color:#f92672>.</span>mean())<span style=color:#f92672>/</span>np<span style=color:#f92672>.</span>std(creatures_train[col])
+
+
+
+creatures_train_centered<span style=color:#f92672>.</span>head()
+
+
+
+data_numbers <span style=color:#f92672>=</span> creatures_train_centered[[<span style=color:#e6db74>&#39;bone_length&#39;</span>, <span style=color:#e6db74>&#39;rotting_flesh&#39;</span>, 
+
+                                         <span style=color:#e6db74>&#39;hair_length&#39;</span>, <span style=color:#e6db74>&#39;has_soul&#39;</span>]]
+
+
+
+numerical_variables <span style=color:#f92672>=</span> [<span style=color:#e6db74>&#39;bone_length&#39;</span>, <span style=color:#e6db74>&#39;rotting_flesh&#39;</span>, 
+
+                       <span style=color:#e6db74>&#39;hair_length&#39;</span>, <span style=color:#e6db74>&#39;has_soul&#39;</span>]
+
+categorical_variables <span style=color:#f92672>=</span> [<span style=color:#e6db74>&#39;color&#39;</span>]
+
+
+
+<span style=color:#75715e># map each creature to a color</span>
+
+color_map <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array([<span style=color:#e6db74>&#39;blue&#39;</span>] <span style=color:#f92672>*</span> creatures_train<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>],dtype<span style=color:#f92672>=</span>object )
+
+color_map[creatures_train[<span style=color:#e6db74>&#39;type&#39;</span>] <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;Goblin&#39;</span>] <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;orange&#39;</span>
+
+color_map[creatures_train[<span style=color:#e6db74>&#39;type&#39;</span>] <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;Ghost&#39;</span>] <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;green&#39;</span>
+</code></pre></div><p><img src=output_5_0.png alt=png></p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>plot_embedding</span>(embedding, color_map, alpha <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>):
+
+    plt<span style=color:#f92672>.</span>scatter(embedding[:, <span style=color:#ae81ff>0</span>],embedding[:, <span style=color:#ae81ff>1</span>], c<span style=color:#f92672>=</span>color_map, s<span style=color:#f92672>=</span><span style=color:#ae81ff>40</span>, cmap<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;viridis&#39;</span>, alpha <span style=color:#f92672>=</span> alpha)
+
+    pop_a <span style=color:#f92672>=</span> mpatches<span style=color:#f92672>.</span>Patch(color<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;blue&#39;</span>, label<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;Ghoul&#39;</span>)
+
+    pop_b <span style=color:#f92672>=</span> mpatches<span style=color:#f92672>.</span>Patch(color<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;orange&#39;</span>, label<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;Goblin&#39;</span>)
+
+    pop_c <span style=color:#f92672>=</span> mpatches<span style=color:#f92672>.</span>Patch(color<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;green&#39;</span>, label<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;Ghost&#39;</span>)
+
+    plt<span style=color:#f92672>.</span>legend(handles<span style=color:#f92672>=</span>[pop_a,pop_b,pop_c])
+
+
+
+ 
+</code></pre></div><p>In the follwing we let \(X\) be \(n \times p\) matrix where \(n\) is the number of data points and \(p\) is the number of features.</p>
+<h1 id=pca>PCA</h1>
+<p>Principal Component Analysis, or PCA, is probably the most widely used embedding. PCA transforms the data into a new coordinate system with an orthogonal linear transformation such that the first coordinate has the greatest variance, the second coordinate has the second greatest variance, and so on. The main advantage is that it is quite simple and fast, but the disadvantage is that it can only capture linear structures, so non-linear information will be lost. PCA can both be used for visualization and modelling.</p>
+<p>When performing PCA it is important to normalize the data as we want to minimize the variance. If one feature has higher variance than the other features it will skew the decomposition.</p>
+<p>Let \(h_w(x)\) denote a orthogonal projection onto a direction \(w \in R^d\). The empirical variance by the projection is:</p>
+<p>\[ var(h_w) = \frac{1}{n} \sum_{i} h_w(x_i)^2 = \frac{1}{n} \sum_{i} \frac{(x_i^Tw)^2}{||w||^2} = \frac{1}{n} \frac{w^T X^T X w}{w^Tw} \]</p>
+<p>where the last term is the Rayleigh quotient. We want to find the i-th principal direction \(w_i\) such that:</p>
+<p>\[ w_i = \underset{w \perp {w_1, \dots w_{i-1}}}{\operatorname{arg max}} var(h_w) \quad s.t. \quad ||w|| = 1 \]</p>
+<p>The Lagrangian form is given by:</p>
+<p>\[ L(w,\lambda) = \frac{1}{n} w^T X^T X w - \lambda w^Tw \]</p>
+<p>Taking the derivative yields</p>
+<p>\[ X^T X w_i =\lambda w_i \]</p>
+<p>This is a well studied eigenvalue problem.</p>
+<p>Once we have found the directions \(w_i\) we project our data onto the directions \(w_i\) as \(\tilde{X} = XW\), where \(W\) is a matrix having \(w_i\) as columns. Each column in \(\tilde{X}\) is called a principal component. The first column being principal component 1 or PC1, and the next column being the principal component 1 or PC2, and so on. The principal components are uncorrelated. \(Cov(w_i^T x_i, w_j^T x_j) = w_i^TCw_j = \lambda_j w_i^Tw_j =0\) (here \(x_i\) and \(x_j\) are a \(p \times 1\) vector, representing a data point. The data has already been normalized in the code above.</p>
+<p>The procedure is fairly straightforward to code, we will only take use 2 coordinates but the number of optimal principal direction could be found with a <a href=https://en.wikipedia.org/wiki/Scree_plot>Scree plot</a> :</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>C <span style=color:#f92672>=</span> (<span style=color:#ae81ff>1.0</span><span style=color:#f92672>/</span>data_numbers<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>])<span style=color:#f92672>*</span>data_numbers<span style=color:#f92672>.</span>T<span style=color:#f92672>.</span>dot(data_numbers)
+
+
+
+lambda_, alpha <span style=color:#f92672>=</span> eigh(C)
+
+print(lambda_)
+
+
+
+<span style=color:#75715e># Do orhogonal projection</span>
+
+coef <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>fliplr(alpha[:,<span style=color:#f92672>-</span><span style=color:#ae81ff>2</span>:])  <span style=color:#75715e># we have to flip the eigenvector matrix as we want the vector corresponding to the highest eigenvalue</span>
+
+X_projected <span style=color:#f92672>=</span> data_numbers<span style=color:#f92672>.</span>dot(coef)
+</code></pre></div><pre><code>[0.51569022 0.63469455 0.97799092 1.87162431]
+</code></pre>
+<p>We can check if the projections are orthogonal.</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>np<span style=color:#f92672>.</span>corrcoef(X_projected<span style=color:#f92672>.</span>T)
+</code></pre></div><pre><code>array([[1.00000000e+00, 7.69730711e-17],
+       [7.69730711e-17, 1.00000000e+00]])
+</code></pre>
+<p>We have made them uncorrelated. Very cool. Let&rsquo;s plot. Instead of simple scatter plot, we create a so-called biplot. This plot allows us to see the effect of each variable on each group.</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>myBiplot</span>(score,coeff,labels, color, alpha <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>):
+
+    <span style=color:#e6db74>&#34;&#34;&#34;
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    Function that plots a PCA biplot
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    &#34;&#34;&#34;</span>
+
+
+
+    <span style=color:#66d9ef>if</span> type(score) <span style=color:#f92672>!=</span> <span style=color:#e6db74>&#39;numpy.ndarray&#39;</span>:
+
+        score <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array(X_projected)
+
+
+
+    xs <span style=color:#f92672>=</span> score[:,<span style=color:#ae81ff>0</span>]
+
+    ys <span style=color:#f92672>=</span> score[:,<span style=color:#ae81ff>1</span>]
+
+    n <span style=color:#f92672>=</span> coeff<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>]
+
+
+
+    plt<span style=color:#f92672>.</span>figure(figsize<span style=color:#f92672>=</span>(<span style=color:#ae81ff>8</span>,<span style=color:#ae81ff>5</span>))
+
+    plt<span style=color:#f92672>.</span>subplot(<span style=color:#ae81ff>1</span>, <span style=color:#ae81ff>1</span>,  <span style=color:#ae81ff>1</span>)
+
+
+
+    
+
+    scalex <span style=color:#f92672>=</span> <span style=color:#ae81ff>1.0</span><span style=color:#f92672>/</span>(xs<span style=color:#f92672>.</span>max() <span style=color:#f92672>-</span> xs<span style=color:#f92672>.</span>min())
+
+    scaley <span style=color:#f92672>=</span> <span style=color:#ae81ff>1.0</span><span style=color:#f92672>/</span>(ys<span style=color:#f92672>.</span>max() <span style=color:#f92672>-</span> ys<span style=color:#f92672>.</span>min())
+
+    points <span style=color:#f92672>=</span> plt<span style=color:#f92672>.</span>scatter(xs <span style=color:#f92672>*</span> scalex, ys <span style=color:#f92672>*</span> scaley, c <span style=color:#f92672>=</span> color, alpha <span style=color:#f92672>=</span> alpha)
+
+
+
+    <span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(n):
+
+        plt<span style=color:#f92672>.</span>arrow(<span style=color:#ae81ff>0</span>, <span style=color:#ae81ff>0</span>, coeff[i,<span style=color:#ae81ff>0</span>], coeff[i,<span style=color:#ae81ff>1</span>],color <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;r&#39;</span>, alpha <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.7</span>)
+
+        plt<span style=color:#f92672>.</span>text(coeff[i,<span style=color:#ae81ff>0</span>]<span style=color:#f92672>*</span> <span style=color:#ae81ff>1.15</span>, coeff[i,<span style=color:#ae81ff>1</span>] <span style=color:#f92672>*</span> <span style=color:#ae81ff>1.15</span>, labels[i], color <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;black&#39;</span>, ha <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;center&#39;</span>, va <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;center&#39;</span>)
+
+
+
+    pop_a <span style=color:#f92672>=</span> mpatches<span style=color:#f92672>.</span>Patch(color<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;blue&#39;</span>, label<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;Ghoul&#39;</span>)
+
+    pop_b <span style=color:#f92672>=</span> mpatches<span style=color:#f92672>.</span>Patch(color<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;orange&#39;</span>, label<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;Goblin&#39;</span>)
+
+    pop_c <span style=color:#f92672>=</span> mpatches<span style=color:#f92672>.</span>Patch(color<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;green&#39;</span>, label<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;Ghost&#39;</span>)
+
+
+
+    plt<span style=color:#f92672>.</span>legend(handles<span style=color:#f92672>=</span>[pop_a,pop_b, pop_c])
+
+
+
+    plt<span style=color:#f92672>.</span>xlim([<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>1</span>])
+
+    plt<span style=color:#f92672>.</span>ylim([<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>1</span>])
+
+    plt<span style=color:#f92672>.</span>xlabel(<span style=color:#e6db74>&#34;PC1&#34;</span>)
+
+    plt<span style=color:#f92672>.</span>ylabel(<span style=color:#e6db74>&#34;PC2&#34;</span>)
+
+    plt<span style=color:#f92672>.</span>grid()
+</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>myBiplot(X_projected, coef, labels <span style=color:#f92672>=</span> list(data_numbers<span style=color:#f92672>.</span>columns), color <span style=color:#f92672>=</span> color_map, alpha <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.5</span>)
+</code></pre></div><p><img src=output_16_0.png alt=png></p>
+<p>We get a nice visual separation, especially between A pretty Ghouls and Ghosts. We can see that Ghouls are more associated with high values of hair_length, has_soul and bone_length. Also, we see that the first principal component is highly correlated with hair_length, has_soul and bone_length as the the value is greater than 0.5. The second principal component is highly negatively correlated with rotting flesh and bone_length.</p>
+<p>How does our method compare to the scipy method?</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>pca <span style=color:#f92672>=</span> PCA(n_components<span style=color:#f92672>=</span><span style=color:#ae81ff>2</span>, svd_solver<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;full&#39;</span>)
+
+X_projected_pca_scipy <span style=color:#f92672>=</span> pca<span style=color:#f92672>.</span>fit_transform(data_numbers)
+
+pca<span style=color:#f92672>.</span>singular_values_
+</code></pre></div><pre><code>array([26.350951  , 19.04821856])
+</code></pre>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>myBiplot(X_projected_pca_scipy,np<span style=color:#f92672>.</span>transpose(pca<span style=color:#f92672>.</span>components_[<span style=color:#ae81ff>0</span>:<span style=color:#ae81ff>2</span>, :]), labels <span style=color:#f92672>=</span> numerical_variables, color <span style=color:#f92672>=</span> color_map, alpha <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.5</span>)
+</code></pre></div><p><img src=output_20_0.png alt=png></p>
+<p>This is the same picture, just upside down as the eigenvector signs are irrelevant.</p>
+<p>Remark: Scipy uses SVD on X which is another method of getting the PCA score. That is we can perform a SVD on \(X\) to obtain \(X = USV^T\). From this equation we can obtain the covariance matrix as:</p>
+<p>\[C = X^TX = \frac{VSU^TYSV^T}{n-1} = \frac{VS^2V^T}{n-1}\]</p>
+<p>so the eigenvalues of C can be obtained as \(\lambda_i = s_i^2/(n-1)\) where \(s_i\) is the corresponding eigenvalue of \(X\). The principal components is then obtained as \(XV = USV^TV = US\)</p>
+<h1 id=kpca>KPCA</h1>
+<p>Kernel PCA (KPCA) is another dimensionality reduction technique closely related to the PCA. Namely, KPCA uses kernel to map the features in a reproducing kernel Hilbert space which is possibly infinite. That way we can get a nonlinear dimensionality reduction. The main advantages being that we can capture non-linear data structures. Also, kernels can be defined between abstract objects such as time series, strings, and graphs allowing more general structure. The disadvantage is that it is sensitive top the kernel choice and it&rsquo;s hyper-paramters. Note, that if a linear kernel is used, we simply get the PCA back. KPCA can both be used for visualization and modelling.</p>
+<p>Like in PCA, we work with normalized data.</p>
+<p>Now we work with functions \(\phi: \mathcal{X} \mapsto \mathcal{X} \) which maps our data living in the data space \(\mathcal{X}\) to functions living in a repdocuing kernel hilbert space \(\mathcal{H}\) and it is in the space \(\mathcal{H}\) where we find a lower dimensional representation of our data.</p>
+<p>For kernel pca we have something very similar to the PCA:</p>
+<p>\[var(h_f) = \frac{1}{n} \sum_i h_f(x_i)^2 = \frac{1}{n} \sum_i \frac{&lt;\phi(x_i), f>_H^2}{||f||_H^2} = \frac{1}{n} \sum_i \frac{f(x_i)^2}{||f||_H^2} \]</p>
+<p>and we want to solve</p>
+<p>\[f_i = \underset{f \perp {f_1, \dots f_{i-1}}}{\operatorname{arg max}} var(h_f) \quad s.t. \quad ||f||_H = 1\]</p>
+<p>Using the representer theorem, we can write the function as \(f_i = \sum_j \alpha_i K(x_j, \cdot)\). The objective becomes</p>
+<p>\[\alpha_i = \underset{\alpha}{\operatorname{arg max}} \alpha^T K^2 \alpha\]</p>
+<p>such that \(\alpha_i^T K \alpha_j, \quad j = 1, \dots, i-1\) (orthogonal) and \(\alpha_i^T K \alpha_i\). We can turn this into an eigenvalue problem by doing a change of variables \(\beta = K^{1/2}\alpha\) where \(K^{1/2} = U\Sigma^{1/2}U^T\). The problem now becomes:</p>
+<p>\[\beta_i = \underset{\beta}{\operatorname{arg max}} \beta^T K \beta\]</p>
+<p>such that \(\beta_i^T K \beta_j, \quad j = 1, \dots, i-1\) (orthogonal) and \(\beta_i^T K \beta_i\). The solution is \(\beta_i = u_i\) where \(u_i\) is the i-th eigenvalue and \(\alpha_i = U\Sigma^{-1/2}U^Tu_i = U^T\Sigma^{-1/2} [\dots, 1, \dots]^T = \frac{1}{\sqrt{\lambda_i}u_i}\)</p>
+<p>Note that if we take a linear kernel, that is, \(f_w(x) = w^Tx\) with the norm \(||f_w||_H = ||w||\) we have:</p>
+<p>\[var(h_w) = \frac{1}{n} \sum_i \frac{f(x_i)^2}{||f||_H^2} = \frac{1}{n} \sum_i \frac{(x_i^Tw)^2}{||w||^2}\]</p>
+<p>so a KPCA with a linear kernel is simply a PCA.</p>
+<p>We can choose multiple kernels but for simplicity we can use the radial basis function kernel (rbf kernel). First we write the functions we need. Note we only use the 4 numerical features.</p>
+<p>An important remark is that we have obtained orthogonal functions in \(\mathcal{H}\), if we would like to find a representation in the data space \(\mathcal{X}\) we would have to find the inverse of the function \(f\). This problem is called the pre-image problem and it is generally hard to solve. Thus, what is instead done in practice to reduce the computational complexity is to simply plot the \(\alpha\) values obtained for the visualization and/or the modelling part.</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>
+
+<span style=color:#66d9ef>def</span> <span style=color:#a6e22e>fit</span>( K, nr_eigen, center <span style=color:#f92672>=</span> <span style=color:#66d9ef>True</span>):
+
+    <span style=color:#e6db74>&#34;&#34;&#34;
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    :param nr_eigen: Number of eigenvalues
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    :param center: Should kernel matrix be centered?
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    &#34;&#34;&#34;</span>
+
+
+
+    <span style=color:#66d9ef>if</span> center:
+
+        K <span style=color:#f92672>=</span> center_kernel_matrix(K)
+
+
+
+    alphas_ <span style=color:#f92672>=</span> obtain_alphas(K,nr_eigen)
+
+    nr_eigen <span style=color:#f92672>=</span> alphas_<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>1</span>]
+
+
+
+    <span style=color:#66d9ef>return</span> K, alphas_
+
+
+
+
+
+<span style=color:#66d9ef>def</span> <span style=color:#a6e22e>center_kernel_matrix</span>(K):
+
+    <span style=color:#e6db74>&#34;&#34;&#34;
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    :param K: The kernel matrix we want to center
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    :return: centered Kernel matrix
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    &#34;&#34;&#34;</span>
+
+    one_l_prime <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>ones(K<span style=color:#f92672>.</span>shape) <span style=color:#f92672>/</span> K<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>1</span>]
+
+    one_l <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>ones(K<span style=color:#f92672>.</span>shape) <span style=color:#f92672>/</span> K<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>1</span>]
+
+    K <span style=color:#f92672>=</span> K \
+
+        <span style=color:#f92672>-</span> np<span style=color:#f92672>.</span>dot(one_l_prime, K) \
+
+        <span style=color:#f92672>-</span> np<span style=color:#f92672>.</span>dot(K, one_l) \
+
+        <span style=color:#f92672>+</span> one_l_prime<span style=color:#f92672>.</span>dot(K)<span style=color:#f92672>.</span>dot(one_l)
+
+    <span style=color:#66d9ef>return</span> K
+
+
+
+<span style=color:#66d9ef>def</span> <span style=color:#a6e22e>rbf_kernel</span>(X, c):
+
+    <span style=color:#e6db74>&#34;&#34;&#34;
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    :param c: parameter for the RBF Kernel function
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    :return: Kernel matrix
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    &#34;&#34;&#34;</span>
+
+    <span style=color:#75715e># Compute squared euclidean distances between all samples, </span>
+
+    <span style=color:#75715e># store values in a matrix</span>
+
+    sqdist_X <span style=color:#f92672>=</span> euclidean_distances(X, X, squared<span style=color:#f92672>=</span><span style=color:#66d9ef>True</span>)
+
+    K <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>exp(<span style=color:#f92672>-</span>sqdist_X <span style=color:#f92672>/</span> c)
+
+    <span style=color:#66d9ef>return</span> K
+
+
+
+
+
+<span style=color:#66d9ef>def</span> <span style=color:#a6e22e>obtain_alphas</span>(K, n):
+
+    <span style=color:#e6db74>&#34;&#34;&#34;
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    :param n: number of components used 
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    :return: returns the first n eigenvectors of the K matrix
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    &#34;&#34;&#34;</span>
+
+
+
+    lambda_, alpha <span style=color:#f92672>=</span> eigh(K, eigvals<span style=color:#f92672>=</span>(K<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>-</span>n,K<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>))
+
+
+
+    alpha_n <span style=color:#f92672>=</span> alpha <span style=color:#f92672>/</span> np<span style=color:#f92672>.</span>sqrt(lambda_)
+
+
+
+    <span style=color:#75715e># Order eigenvalues and eigenvectors in descending order</span>
+
+    lambda_ <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>flipud(lambda_)
+
+    alpha_n <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>fliplr(alpha_n)
+
+
+
+
+
+
+
+    <span style=color:#66d9ef>return</span> alpha_n 
+</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>plt<span style=color:#f92672>.</span>figure(figsize<span style=color:#f92672>=</span>(<span style=color:#ae81ff>20</span>, <span style=color:#ae81ff>5</span>))
+
+
+
+<span style=color:#66d9ef>for</span> i, rbf_constant <span style=color:#f92672>in</span> enumerate([<span style=color:#ae81ff>0.5</span>, <span style=color:#ae81ff>1</span>, <span style=color:#ae81ff>2</span>, <span style=color:#ae81ff>4</span>]):
+
+    plt<span style=color:#f92672>.</span>subplot(<span style=color:#ae81ff>1</span>, <span style=color:#ae81ff>4</span>, i <span style=color:#f92672>+</span> <span style=color:#ae81ff>1</span>)
+
+    
+
+    K <span style=color:#f92672>=</span> rbf_kernel(data_numbers, rbf_constant)
+
+    K, alphas <span style=color:#f92672>=</span> fit(K, <span style=color:#ae81ff>2</span>)
+
+
+
+    plot_embedding(alphas, color_map)
+
+    plt<span style=color:#f92672>.</span>title(<span style=color:#e6db74>f</span><span style=color:#e6db74>&#39;rbf constant = </span><span style=color:#e6db74>{</span>rbf_constant<span style=color:#e6db74>}</span><span style=color:#e6db74>&#39;</span>)
+</code></pre></div><p><img src=output_25_0.png alt=png></p>
+<p>Again we get some distiction between the types. Let&rsquo;s try the Sklearn KPCA</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>transformer <span style=color:#f92672>=</span> KernelPCA(n_components <span style=color:#f92672>=</span> <span style=color:#ae81ff>2</span>, kernel<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;rbf&#39;</span>, fit_inverse_transform<span style=color:#f92672>=</span><span style=color:#66d9ef>True</span>, gamma <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>/</span><span style=color:#ae81ff>2</span>)
+
+X_kpca <span style=color:#f92672>=</span> transformer<span style=color:#f92672>.</span>fit_transform(data_numbers)
+
+plt<span style=color:#f92672>.</span>figure(figsize<span style=color:#f92672>=</span>(<span style=color:#ae81ff>20</span>, <span style=color:#ae81ff>5</span>))
+
+plt<span style=color:#f92672>.</span>subplot(<span style=color:#ae81ff>1</span>, <span style=color:#ae81ff>2</span>, <span style=color:#ae81ff>1</span>)
+
+plot_embedding(transformer<span style=color:#f92672>.</span>alphas_, color_map)
+
+
+</code></pre></div><p><img src=output_27_0.png alt=png></p>
+<p>This is exactly the same figure. We could in theory include categorical variables by using a kernel for categorical data, for example the Aitchison and Aitken kernel function. That is, we can define a kernel between the numerical features with \(k_{num}\) and we also define a different kernel between the categorical features \(k_{cat}\). Then we perform KPCA on \(k = k_{num}k_{cat}\).</p>
+<h1 id=multidimensional-scaling>Multidimensional Scaling</h1>
+<h2 id=the-classical-mds>The classical mds</h2>
+<p><a href=https://en.wikipedia.org/wiki/Multidimensional_scaling>Multidimensional scaling</a> (MDS) is a data visualization technique which tries to preserve distances between samples globally using only a table of distances between them. That is we are given distances \(d_{ij}\) and we want to find embeddings \(y_i \in R^q\) for each data point s.t.</p>
+<p>\[ \sum_{i &lt;j} (||y_i - y_j|| - d_{ij})\]</p>
+<p>is minimized. We can derive the algorithm, Assume that \(x \in R^q\), \(p&lt;q\) :</p>
+<p>We know that \(d_{ij}^2 =||x_i - x_j||^2 = x_i^Tx_i + x_j^Tx_j - 2x_i^Tx_j\). Let \(K = XX^T\) be the Gram matrix (linear kernel). Rewriting the previous equations as \(d_{ij} = k_{ii} + k_{jj} -2k_{ij}\) and assuming that that the data is centered, \(sum_{i = 1}^n x_{im} = 0\) (any center location could be used as if x is solution then x +c is solution is well) then for all \(m\), we obtain:</p>
+<p>\[\sum_{i = 1}^n k_{ij} = \sum_{i = 1}^n \sum_{m = 1}^q x_{im} x_{jm} = \sum_{m = 1}^q x_{jm} \sum_{i = 1}^n x_{im} = 0\]</p>
+<p>We also have</p>
+<p>\[ \sum_{i = 1}^n d_{ij}^2 = trace(K) + nb_{jj}, \quad \sum_{j = 1}^n d_{ij}^2 = trace(K) + nb_{ii}, \quad \sum_{i = 1}^n \sum_{j = 1}^n d_{ij}^2 = 2n*trace(B) \]</p>
+<p>Rearranging the previous equation and plugging it into \(d_{ij} = k_{ii} + k_{jj} -2k_{ij}\) gives</p>
+<p>\[ k_{ij} = -1/2 (d_{ij}^2 - 1/n \sum_{i = 1}^n d_{ij}^2 - 1/n \sum_{j = 1}^n d_{ij}^2 + 1/n^2 \sum_{i = 1}^n \sum_{j = 1}^n d_{ij}^2 )\]</p>
+<p>which can be written in a matrix form (try by writing it down for a 3x3 matrix):</p>
+<p>\[K = -1/2 H D^{(2)} H\]</p>
+<p>where \(H = I - 1/n ee^T\) and \(e\) is a vector of one&rsquo;s. The solution is then given by the eigen-decomposition of \(K\), \(K = V\Lambda V^T\) and \(X = V \Lambda^{1/2}\). For dimensionality reduction, simply pick the top \(q\) eigenvector and eigenvalues and calculate the embedding as \(\tilde{X} = V_q\Lambda_pq{1/2}\). The disadvantage is that is does not support out-of-sample transformation (we would have to redo the embedding scheme for each new sample). Note, that we can use which ever distance matrix we like so we are not restricted by the euclidean distance.</p>
+<h2 id=the-metric-mds>The metric mds</h2>
+<p>Is a generalization of the classical mds which allows for a variety of loss functions. The most widely used loss function is called s tress. see the wiki for more information.</p>
+<h2 id=the-isomap>The Isomap</h2>
+<p>Isomap generalizes the metric mds where the idea is to perform MDS not on the input space but rather on the geodesic space of the nonlinear data manifold. The first step is to find the nearest neighbours of each data point in high-dimensional data space, this generates a graph where each node is a data point and the edges connect the nearest neighbours of each data point and the weight of the edge is the input space distance. The second step is to calculate the geodesic pairwise distances between all points by using the a shortest path algorithm, for example, Dijkstra�s algorithm or Floyd�s algorithm. Finally the metric mds embedding is used. The disadvantage is of isomats are potential �short-circuits�, in which a single noisy datapoint provides a bridge between two regions of dataspace that should be far apart in the low-dimensional representation.</p>
+<p>The disadvantage of these methods is that they are generally not used on unseen data although it <a href=https://papers.nips.cc/paper/2003/file/cf05968255451bdefe3c5bc64d550517-Paper.pdf>can be done</a></p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>mds</span>(D, p):
+
+    <span style=color:#e6db74>&#34;&#34;&#34;
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    Calculate multidimensional scaling
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    :param D: The distance matrix where each entry is squared
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    :param p: Embedding dimension
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    &#34;&#34;&#34;</span>
+
+    <span style=color:#75715e># We just need to calculate</span>
+
+
+
+    n <span style=color:#f92672>=</span> D<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>]
+
+    H <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>identity(n) <span style=color:#f92672>-</span> (<span style=color:#ae81ff>1.0</span><span style=color:#f92672>/</span>n) <span style=color:#f92672>*</span> np<span style=color:#f92672>.</span>ones((n,n))
+
+
+
+    K <span style=color:#f92672>=</span> <span style=color:#f92672>-</span><span style=color:#ae81ff>0.5</span> <span style=color:#f92672>*</span> np<span style=color:#f92672>.</span>dot(H,D)<span style=color:#f92672>.</span>dot(H)
+
+
+
+    lamda, V <span style=color:#f92672>=</span> eigh(K)
+
+
+
+    <span style=color:#75715e># Order eigenvalues and eigenvectors in descending order</span>
+
+    lamda <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>flipud(lambda_)
+
+    V <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>fliplr(V)
+
+
+
+    embedding <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>dot(V[:, :p], np<span style=color:#f92672>.</span>diag(lamda[:p]))
+
+
+
+    <span style=color:#66d9ef>return</span> embedding
+</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#75715e># using the  Minkowski p-norm </span>
+
+plt<span style=color:#f92672>.</span>figure(figsize<span style=color:#f92672>=</span>(<span style=color:#ae81ff>20</span>, <span style=color:#ae81ff>5</span>))
+
+
+
+<span style=color:#66d9ef>for</span> i, p <span style=color:#f92672>in</span> enumerate([<span style=color:#ae81ff>1</span>, <span style=color:#ae81ff>2</span>, <span style=color:#ae81ff>3</span>]):
+
+    plt<span style=color:#f92672>.</span>subplot(<span style=color:#ae81ff>1</span>, <span style=color:#ae81ff>3</span>, i<span style=color:#f92672>+</span><span style=color:#ae81ff>1</span>)
+
+   
+
+    D <span style=color:#f92672>=</span> distance_matrix(data_numbers, data_numbers, p<span style=color:#f92672>=</span>p)
+
+    D_sq <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>power(D, <span style=color:#ae81ff>2</span>)
+
+
+
+    embedding <span style=color:#f92672>=</span> mds(D_sq, <span style=color:#ae81ff>2</span>)
+
+    
+
+    plot_embedding(embedding, color_map)
+
+    plt<span style=color:#f92672>.</span>title(<span style=color:#e6db74>f</span><span style=color:#e6db74>&#39;Minkowski </span><span style=color:#e6db74>{</span>p<span style=color:#e6db74>}</span><span style=color:#e6db74>-norm&#39;</span>)
+</code></pre></div><p><img src=output_32_0.png alt=png></p>
+<p>Note that that \(p=2\) results in the same embedding as the PCA. This happens as the \(p =2\) norm is the same as a linear kernel</p>
+<p>Comparing this to Sklearn&rsquo;s mds.</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>embedding <span style=color:#f92672>=</span> MDS(n_components<span style=color:#f92672>=</span><span style=color:#ae81ff>2</span>)
+
+X_transformed <span style=color:#f92672>=</span> embedding<span style=color:#f92672>.</span>fit_transform(data_numbers)
+</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>plot_embedding(X_transformed, color_map)
+</code></pre></div><p><img src=output_36_0.png alt=png></p>
+<p>This is not the same embedding as the sklearn uses the metric mds which uses the SMACOF (Scaling by MAjorizing a COmplicated Function) algorithm to minimizes an objective function.</p>
+<p>We can also look at the Isomap embeddings using sklearn.</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>embedding_isomap <span style=color:#f92672>=</span> Isomap(n_components<span style=color:#f92672>=</span><span style=color:#ae81ff>2</span>, n_neighbors<span style=color:#f92672>=</span><span style=color:#ae81ff>40</span>)
+
+X_transformed_isomap <span style=color:#f92672>=</span> embedding_isomap<span style=color:#f92672>.</span>fit_transform(data_numbers)
+</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>plot_embedding(X_transformed_isomap, color_map)
+</code></pre></div><p><img src=output_39_0.png alt=png></p>
+<h1 id=correspondence-analysis>Correspondence Analysis</h1>
+<p><a href=https://www.cambridge.org/core/journals/mathematical-proceedings-of-the-cambridge-philosophical-society/article/abs/connection-between-correlation-and-contingency/D3A75249B56AF5DDC436938F1B6EABD1>Correspondence Analysis</a> is a method that helps us finding a connection between correlation and contingency. These methods are best suited for categorical data, but numerical data could be made categorical by binning strategies. The wiki page does a good job explaining the methodology <a href=https://en.wikipedia.org/wiki/Correspondence_analysis>CA</a>.</p>
+<p>We start by calculating the contingency table \(C\).</p>
+<p>We compute the row and column weights, \(w_m = \frac{1}{n_c} C 1\) and \(w_n = \frac{1}{n_c} 1^T C\). Let \(n_c = \sum _j \sum _j C_{ij}\).</p>
+<p>The weights are transformed into matrices, \(W_m = diag(1/\sqrt(w_m))\) and \(W_n = diag(1/\sqrt(w_n))\). Next, the standardized residuals are found</p>
+<p>\[ S = W_M(P-w_m w_n)W_n\]</p>
+<p>To calculate the coordinates for CA we perform a SVD decomposition of the standardized residual. The left singular vectors correspond to the categories in the rows of the table, and the right singular vectors correspond to the columns. The eigenvalue gives us the variance of each dimension. That is the principal coordinates of the rows are \(F_m = W_m U \Sigma\) and the principal coordinates for the columns are \(F_n = W_n V \Sigma\)</p>
+<p>We can also plot the data in standard coordinates which are defined as \(G_m = W_mU\), \(G_n = W_n V\)</p>
+<p>Note when we plot the data in the same space using the principal coordinates (\(F\)), we can only interpret the distance between row points or the distance between column points (intra distance). We can not interpret the distance between rows and column points (inter distance). To interpret the distance between column points and row points, we plot the decomposition in an asymmetric fashion. Rows (or columns) points are plotted from the standard coordinates and the profiles of the columns (or the rows) are plotted from the principal coordinates (\(F\) and \(G\)). If we plot using the standard coordinates (G) then the intra distance will be exaggerated.</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>CA</span>(data,row, col):
+
+    <span style=color:#e6db74>&#34;&#34;&#34;
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    :param row: name of row variable
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    :param col: name of col variable
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    &#34;&#34;&#34;</span>
+
+    <span style=color:#e6db74>&#34;&#34;</span>
+
+    C <span style=color:#f92672>=</span> pd<span style=color:#f92672>.</span>crosstab(data[row],data[col], margins <span style=color:#f92672>=</span> <span style=color:#66d9ef>False</span>)
+
+    print(C)
+
+
+
+    col_var <span style=color:#f92672>=</span> list(C<span style=color:#f92672>.</span>columns)
+
+    row_var <span style=color:#f92672>=</span> list(C<span style=color:#f92672>.</span>index)
+
+
+
+    n_c <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>sum(np<span style=color:#f92672>.</span>sum(C))  <span style=color:#75715e># sum of all cell values in C</span>
+
+
+
+    w_m <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array(C)<span style=color:#f92672>.</span>dot(np<span style=color:#f92672>.</span>ones((C<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>1</span>], <span style=color:#ae81ff>1</span>))) <span style=color:#f92672>/</span> n_c  <span style=color:#75715e># column weights</span>
+
+
+
+    w_n <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>ones((<span style=color:#ae81ff>1</span>, C<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>]))<span style=color:#f92672>.</span>dot(np<span style=color:#f92672>.</span>array(C)) <span style=color:#f92672>/</span> n_c
+
+
+
+    W_m <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>diag(<span style=color:#ae81ff>1.0</span><span style=color:#f92672>/</span>np<span style=color:#f92672>.</span>sqrt(w_m[:,<span style=color:#ae81ff>0</span>]))
+
+    W_n <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>diag(<span style=color:#ae81ff>1.0</span><span style=color:#f92672>/</span>np<span style=color:#f92672>.</span>sqrt(w_n[<span style=color:#ae81ff>0</span>,:]))
+
+
+
+    P <span style=color:#f92672>=</span> (<span style=color:#ae81ff>1</span><span style=color:#f92672>/</span>n_c) <span style=color:#f92672>*</span> C
+
+
+
+    <span style=color:#75715e># standarized residuals</span>
+
+    S <span style=color:#f92672>=</span> W_m<span style=color:#f92672>.</span>dot(P <span style=color:#f92672>-</span> np<span style=color:#f92672>.</span>dot(w_m, w_n))<span style=color:#f92672>.</span>dot(W_n)
+
+
+
+
+
+    U, Sigma, Vt <span style=color:#f92672>=</span> svd(S, full_matrices<span style=color:#f92672>=</span><span style=color:#66d9ef>False</span>)
+
+
+
+    F_m <span style=color:#f92672>=</span> W_m<span style=color:#f92672>.</span>dot(U)<span style=color:#f92672>.</span>dot(np<span style=color:#f92672>.</span>diag(Sigma))
+
+    F_n <span style=color:#f92672>=</span> W_n<span style=color:#f92672>.</span>dot(Vt<span style=color:#f92672>.</span>T)<span style=color:#f92672>.</span>dot(np<span style=color:#f92672>.</span>diag(Sigma))
+
+
+
+    G_m <span style=color:#f92672>=</span> W_m<span style=color:#f92672>.</span>dot(U)
+
+    G_n <span style=color:#f92672>=</span> W_n<span style=color:#f92672>.</span>dot(Vt<span style=color:#f92672>.</span>T)
+
+
+
+    plt<span style=color:#f92672>.</span>scatter(G_m[:,<span style=color:#ae81ff>0</span>], G_m[:,<span style=color:#ae81ff>1</span>], c <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;blue&#39;</span>)
+
+    <span style=color:#66d9ef>for</span> i, name <span style=color:#f92672>in</span> enumerate(row_var):
+
+        plt<span style=color:#f92672>.</span>text(G_m[i,<span style=color:#ae81ff>0</span>], G_m[i,<span style=color:#ae81ff>1</span>], name)
+
+
+
+    <span style=color:#75715e># plit color </span>
+
+    plt<span style=color:#f92672>.</span>scatter(F_n[:,<span style=color:#ae81ff>0</span>], F_n[:,<span style=color:#ae81ff>1</span>], c <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;red&#39;</span>)
+
+    <span style=color:#66d9ef>for</span> i, name <span style=color:#f92672>in</span> enumerate(col_var):
+
+        plt<span style=color:#f92672>.</span>text(F_n[i,<span style=color:#ae81ff>0</span>], F_n[i,<span style=color:#ae81ff>1</span>], name)
+
+
+
+
+
+    <span style=color:#66d9ef>return</span> F_m, F_n, G_m, G_n
+</code></pre></div><p>We plot the first two dimensions of each type and each color.</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>F_m, F_n, G_m, G_n <span style=color:#f92672>=</span> CA(creatures_train,<span style=color:#e6db74>&#39;type&#39;</span>, <span style=color:#e6db74>&#39;color&#39;</span>)
+
+
+</code></pre></div><pre><code>color   black  blood  blue  clear  green  white
+type                                           
+Ghost      14      6     6     32     15     44
+Ghoul      14      4     6     42     13     50
+Goblin     13      2     7     46     14     43
+</code></pre>
+<p><img src=output_43_1.png alt=png></p>
+<p>This is pretty anti-climatic, but we could say that blood corresponds mostly with Ghost. I don&rsquo;t these results are so surprising as the the color distribution for the types are very similar if we look at the contingency table. If we would have more than one categorical variable we could use <a href=https://en.wikipedia.org/wiki/Multiple_correspondence_analysis>Multiple correspondence analysis</a>, which is pretty similar to CA and straightforward to implement.</p>
+<h1 id=diffusion-map>Diffusion map</h1>
+<p><a href=https://www.sciencedirect.com/science/article/pii/S1063520306000546>Diffusion map</a> (ses also <a href=https://inside.mines.edu/~whereman/talks/delaPorte-Herbst-Hereman-vanderWalt-DiffusionMaps-PRASA2008.pdf>An Introduction to Diffusion Maps</a>) is data visualization reduction technique. Similar to the Isomap it is a technique relying on a graph based algorithm, interpreting weighted graphs as a notion of geometry.</p>
+<p>The diffusion map is generally not used on unseen data but it <a href=https://papers.nips.cc/paper/2003/file/cf05968255451bdefe3c5bc64d550517-Paper.pdf>can be done</a></p>
+<p>The connectivity between two data points, \(x\) and \(y\) is defined as the probability of jumping from \(x\) to \(y\) in one step of a random walk on a graph. The connectivity is expressed in terms of a kernel \(k(x,y)\)</p>
+<p>The Gaussian kernel (rbf kernel)</p>
+<p>\[k(x,y) = \exp(-\frac{||x-y||^2}{\alpha})\]</p>
+<p>is popular as it gives a prior to the local geometry of \(X\) using the euclidean norm. By tweaking the parameter \(\alpha\) we are essentially defining the size of the neighbourhood area.</p>
+<p>Then \(p(x,y)\) is defined as</p>
+<p>\[p(x,y) = \frac{1}{d_X}k(x,y)\]</p>
+<p>where \(d_X = \sum_{y }k(x,y)\) is a normalizing constant. Note that \(p(x,y)\) is no longer symmetric but it defines a Markov chain, and a path between two points is now measured by the path length, that is, how probable is it to transit from \(x\) to \(y\) in \(t\) steps. Using this idea we define the diffusion distance of two points in the space as the probability of jumping between them in \(t steps\)</p>
+<p>\[ D_t(X_i, X_j) = \sum_u | p_t(X_i, u) - p_t(X_j, u)| ^2\]</p>
+<p>where \(t\) denotes the number of steps. As the walk goes on it reveals the geometric structure of the data and the main contributors to the diffusion distance are paths along that structure.</p>
+<p>Finally, to visualize the data manifold, we want to find points \(Y_i\) and \(Y_j\), that exist in an \(r\)-dimensional euclidean space which conserve the distance between \(X_i\) and \(X_j\) on the manifold, that is.</p>
+<p>\[ || Y_i - Y_j ||_2 = D_t(X_i, X_j) \]</p>
+<p>To find the data points \(Y_i\), we simply pick the top \(r\) eigenvalues of \(P\) and set \(Y_i = [\lambda_1 v_1[i], \dots, \lambda_r v_1[r]]\) where \(v_n[i]\) is \(i\)-th component of the \(n\)-th right eigenvector. A remark is that we look at \(P' = D^{-1/2} k D^{-1/2}\), which has the same eigenvalues as \(P\), see <a href=https://inside.mines.edu/~whereman/talks/delaPorte-Herbst-Hereman-vanderWalt-DiffusionMaps-PRASA2008.pdf>An Introduction to Diffusion Maps</a> for a better explanation.</p>
+<p>The code implementation is pretty straight forward, it yet again bowls down to an eigenvalue decomposition,</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>DiffusionMap</span>(X, alpha, t):
+
+    <span style=color:#e6db74>&#34;&#34;&#34;
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    :param X: data matrix
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    :param alpha: Gaussian kernel parameter
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    &#34;&#34;&#34;</span>
+
+
+
+
+
+    sqdist_X <span style=color:#f92672>=</span> euclidean_distances(X, X, squared<span style=color:#f92672>=</span><span style=color:#66d9ef>True</span>)
+
+    K <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>exp(<span style=color:#f92672>-</span>sqdist_X <span style=color:#f92672>/</span> alpha)
+
+
+
+
+
+
+
+    d_x <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>sum(K,axis<span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>)
+
+    D_inv <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>diag(<span style=color:#ae81ff>1</span><span style=color:#f92672>/</span>d_x)
+
+
+
+    P <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>dot(D_inv,K)
+
+
+
+    D_sq_inv <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>diag((d_x) <span style=color:#f92672>**</span> <span style=color:#f92672>-</span><span style=color:#ae81ff>0.5</span>)
+
+
+
+
+
+    P_prime <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>dot(D_sq_inv, np<span style=color:#f92672>.</span>dot(K,D_sq_inv))
+
+    P_prime <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>matmul(np<span style=color:#f92672>.</span>diag((d_x) <span style=color:#f92672>**</span> <span style=color:#ae81ff>0.5</span>), np<span style=color:#f92672>.</span>matmul(P,D_sq_inv))
+
+
+
+    lamda, U <span style=color:#f92672>=</span> eigh(P_prime)
+
+
+
+    idx <span style=color:#f92672>=</span> lamda<span style=color:#f92672>.</span>argsort()[::<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>]
+
+    lamda <span style=color:#f92672>=</span> lamda[idx]
+
+    U <span style=color:#f92672>=</span> U[:,idx]
+
+    <span style=color:#75715e># print(lamda)</span>
+
+
+
+    coord <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>dot(D_sq_inv, U)<span style=color:#75715e>#.dot(np.diag(lamda ** t))</span>
+
+
+
+    <span style=color:#66d9ef>return</span> coord, lamda, U
+</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>embedding_diffusion, lamda, U <span style=color:#f92672>=</span> DiffusionMap(data_numbers, <span style=color:#ae81ff>1.5</span>, <span style=color:#ae81ff>1</span>)
+
+embedding_diffusion<span style=color:#f92672>.</span>shape
+</code></pre></div><pre><code>(371, 371)
+</code></pre>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>plot_embedding(embedding_diffusion[:, <span style=color:#ae81ff>1</span>:], color_map, alpha <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.7</span>)
+</code></pre></div><p><img src=output_50_0.png alt=png></p>
+<h1 id=tsne>TSNE</h1>
+<p><a href=https://www.jmlr.org/papers/volume9/vandermaaten08a/vandermaaten08a.pdf>t-sne</a> is another data visualization technique. It maps the data points in such a way that similar points are grouped together with a high probability, and that distant points will be distant with high probability. Therefore, t-sne aims to perserve local structure. The main idea is that the similarity between a point \(x_i\) and all other points \(x_j\) is measured with a conditional Gaussian, \(p_{j|i}\). That is, the probability that \(x_i\) would pick \(x_j\) as a neighbour,</p>
+<p>\[p_{j|i} \frac{\exp (-||x_i - x_j||^2/2\sigma_i^2)}{\sum_{k \neq i}\exp (-||x_i - x_k||^2/2\sigma_i^2}\]</p>
+<p>we set \(p_{i|i}\) to zero. We will explain the \(\sigma\) parameter later on. Then, to introduce symmetry, we will work the probability</p>
+<p>\[ p_{ij} = \frac{p_{j|i} + p_{i|j}}{2n} \]</p>
+<p>where \(n\) is the number of data points. The denominatior is introcuded to ensure that each data point contributes to the cost function, \(\sum_j p_{ij} > 1/(2n)\).</p>
+<p>The similarity in the low dimensional map is defined using a Cauchy distribution.</p>
+<p>\[q_{ij} = \frac{(1+ ||y_i - y_j||)^{-1}}{\sum_{k \neq l} (1+ ||y_k - y_l||)^{-1}}\]</p>
+<p>To measure the faithfulness with which \(q_{ij}\) models \(p_{ij}\), the Kullback-Leibler divergence is used.</p>
+<p>\[C = \sum_i KL(P_i || Q_i) = \sum_i \sum_j p_{ji} \log \frac{p_{ji}}{q_{ji}}\]</p>
+<p>We are interested in finding the best \(y_i\) to represent \(x_i\) in low-dimension. Therefore, we take the gradient with respect to \(y_i\) and we get (see the derivation in the paper)</p>
+<p>\[ \frac{\partial C}{\partial y_i} = 4 \sum_j (p_{ij} - q_{ij})(y_i - y_j)(1 + ||y_i - y_j||^2)^{-1}\]</p>
+<p>and finally we perform we use gradient descent, with a momentum term to speed up the optimization and to avoid poor local minima.</p>
+<p>\[ y^{(t)} = y^{(t-1)} + \eta \frac{\partial C}{\partial y} + \alpha(t)(y^{(t-1)} - y^{(t-2)}) \]</p>
+<p>where \(\eta\) is the learning rate and \(\alpha\) is the momentum at iteration \(t\).</p>
+<p>The low dimensional embedding is initialized with a normal distribution.</p>
+<p>It is important to note that the cost function is non convex and the solution depends on the initial embedding. Therefore, each time the algorithm is run, the outcome won&rsquo;t be the same.</p>
+<p>A major weakness of t-SNE is that the cost function is not convex, as a result of which several optimization parameters need to be chosen (including random initial low dimensional embeddings). Therefore, each time the algorithm is run, the outcome won&rsquo;t be the same. That being said, a local optimum of a cost function that accurately captures a good representation is often preferable to the global optimum of a cost function that fails to capture important aspects.</p>
+<p>What about \(\sigma_i\)? It is not likely that there is a single value of \(\sigma_i\) that is optimal for all datapoints in the data set because the density of the data is likely to vary In dense regions, a smaller value of \(\sigma_i\) is usually more appropriate than in sparser regions. \(\sigma_i\) is found by introducing a parameter called perplexity:</p>
+<p>\[ perp(p_i) = 2^{H(p_i)}\]</p>
+<p>where</p>
+<p>\[ H(p_i) = - \sum_{j} p_{j|i} \log_2 p_{j|i} \]</p>
+<p>We can find \(\sigma_i\) with a binary search.</p>
+<p>The perplexity can be interpreted as a smooth measure of the effective number of neighbors. The performance of t-SNE is fairly robust to changes in the perplexity, and typical values are between 5 and 50.</p>
+<p>For large data sets, it will be costly to store the probability if each data point considered all other data points as a neighbour. To make the computations feasible we can start by choosing a desired number of neighbors and creating a neighborhood graph for all of the datapoints. Although this is computationally intensive, it is only done once. This is very similar to the isomap and the diffusion map. Finally, \(p_{j|i}\) is defined as the fraction of random walks starting at landmark point \(x_i\) that terminate at landmark point \(x_j\).</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>sigma_binary_search</span>(perplexity, sqdist, n_steps <span style=color:#f92672>=</span> <span style=color:#ae81ff>100</span>, tolerance <span style=color:#f92672>=</span> <span style=color:#ae81ff>1e-5</span>) <span style=color:#f92672>-&gt;</span> np<span style=color:#f92672>.</span>array:
+
+    <span style=color:#e6db74>&#34;&#34;&#34;
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    Perform binary search to find the sigmas. We perform the search on log scale. Note, we return the probability matrix P
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    :param perplexity: perplexity
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    :param sqdist: array (n_samples, n_neighbours), Square distances of data points
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    :param n_steps: Number of binary search steps.n_steps
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    &#34;&#34;&#34;</span>
+
+
+
+    n_samples <span style=color:#f92672>=</span> sqdist<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>]
+
+    n_neighbours <span style=color:#f92672>=</span> sqdist<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>1</span>]
+
+
+
+    desired_entropy <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>log(perplexity)
+
+
+
+    P <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>zeros((n_samples, n_neighbours), dtype<span style=color:#f92672>=</span>np<span style=color:#f92672>.</span>float64)
+
+
+
+    <span style=color:#75715e># Perform binary search for each data point</span>
+
+    <span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(n_samples):
+
+        <span style=color:#75715e># var = 1/(2sigma^2)</span>
+
+        var_min <span style=color:#f92672>=</span> <span style=color:#f92672>-</span>np<span style=color:#f92672>.</span>Inf
+
+        var_max <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>Inf
+
+        var <span style=color:#f92672>=</span> <span style=color:#ae81ff>1.0</span>
+
+
+
+        <span style=color:#75715e># start binary search</span>
+
+        <span style=color:#66d9ef>for</span> k <span style=color:#f92672>in</span> range(n_steps):
+
+            
+
+            sum_p_i <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.0</span>  <span style=color:#75715e># the sum of $ p_{j|i}</span>
+
+
+
+            <span style=color:#66d9ef>for</span> j <span style=color:#f92672>in</span> range(n_neighbours):
+
+                <span style=color:#66d9ef>if</span> j <span style=color:#f92672>!=</span> i:
+
+                    P[i, j] <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>exp(<span style=color:#f92672>-</span>sqdist[i, j] <span style=color:#f92672>*</span> var)
+
+                    sum_p_i <span style=color:#f92672>+=</span> P[i, j]
+
+
+
+            
+
+            sum_disti_Pi <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.0</span>
+
+            <span style=color:#66d9ef>for</span> j <span style=color:#f92672>in</span> range(n_neighbours):
+
+                P[i, j] <span style=color:#f92672>/=</span> sum_p_i
+
+                sum_disti_Pi <span style=color:#f92672>+=</span> sqdist[i, j] <span style=color:#f92672>*</span> P[i, j]
+
+
+
+
+
+            entropy <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>log(sum_p_i)<span style=color:#f92672>*</span><span style=color:#ae81ff>1.0</span> <span style=color:#f92672>+</span> var <span style=color:#f92672>*</span> sum_disti_Pi
+
+            entropy_diff <span style=color:#f92672>=</span> entropy <span style=color:#f92672>-</span> desired_entropy
+
+
+
+            <span style=color:#66d9ef>if</span> np<span style=color:#f92672>.</span>abs(entropy_diff) <span style=color:#f92672>&lt;=</span> tolerance:
+
+                <span style=color:#66d9ef>break</span>
+
+
+
+            <span style=color:#75715e># perform binary search</span>
+
+            <span style=color:#66d9ef>if</span> entropy_diff <span style=color:#f92672>&gt;</span> <span style=color:#ae81ff>0.0</span>:
+
+                var_min <span style=color:#f92672>=</span> var
+
+                <span style=color:#66d9ef>if</span> var_max <span style=color:#f92672>==</span> np<span style=color:#f92672>.</span>Inf:
+
+                    var <span style=color:#f92672>*=</span> <span style=color:#ae81ff>2.0</span>
+
+                <span style=color:#66d9ef>else</span>:
+
+                    var <span style=color:#f92672>=</span> (var <span style=color:#f92672>+</span> var_max) <span style=color:#f92672>/</span> <span style=color:#ae81ff>2.0</span>
+
+            <span style=color:#66d9ef>else</span>:
+
+                var_max <span style=color:#f92672>=</span> var
+
+                <span style=color:#66d9ef>if</span> var_min <span style=color:#f92672>==</span> <span style=color:#f92672>-</span>np<span style=color:#f92672>.</span>Inf:
+
+                    var <span style=color:#f92672>/=</span> <span style=color:#ae81ff>2.0</span>
+
+                <span style=color:#66d9ef>else</span>:
+
+                    var <span style=color:#f92672>=</span> (var <span style=color:#f92672>+</span> var_min) <span style=color:#f92672>/</span> <span style=color:#ae81ff>2.0</span>
+
+
+
+    <span style=color:#66d9ef>return</span> P
+</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>tsnse</span>(X, perplexity, nr_steps, eta <span style=color:#f92672>=</span> <span style=color:#ae81ff>100</span>, n_steps <span style=color:#f92672>=</span> <span style=color:#ae81ff>100</span>, tolerance <span style=color:#f92672>=</span> <span style=color:#ae81ff>1e-5</span>):
+
+    <span style=color:#e6db74>&#34;&#34;&#34;
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    Some of the code is from the author of t-sne https://lvdmaaten.github.io/tsne/
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    :param X: data matrix (n_samples, n_features)
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    :param perplexity: perplexity
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    :param n_steps: Number of graident descent steps
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    :param eta: Learning rate
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    :param sqdist: array (n_samples, n_neighbours), Square distances of data points
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    :param n_steps: Number of binary search steps.n_steps
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>    &#34;&#34;&#34;</span>
+
+
+
+    n <span style=color:#f92672>=</span> X<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>]
+
+
+
+    sqdist_X <span style=color:#f92672>=</span> euclidean_distances(X, X, squared<span style=color:#f92672>=</span><span style=color:#66d9ef>True</span>)
+
+    P <span style=color:#f92672>=</span> sigma_binary_search(perplexity, sqdist_X)
+
+
+
+    P <span style=color:#f92672>=</span> (P <span style=color:#f92672>+</span> P<span style=color:#f92672>.</span>T)<span style=color:#f92672>/</span>(<span style=color:#ae81ff>2.0</span> <span style=color:#f92672>*</span> n)
+
+    P <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>maximum(P, <span style=color:#ae81ff>1e-12</span>)
+
+
+
+    <span style=color:#75715e># initalize Y</span>
+
+    Y <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>random<span style=color:#f92672>.</span>randn(n, <span style=color:#ae81ff>2</span>)
+
+    gradient <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>zeros((n, <span style=color:#ae81ff>2</span>))  
+
+    iY_1 <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>zeros((n, <span style=color:#ae81ff>2</span>))
+
+
+
+
+
+    <span style=color:#75715e># start gradient descent</span>
+
+    <span style=color:#66d9ef>for</span> t <span style=color:#f92672>in</span> range(nr_steps):
+
+
+
+        Q <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>zeros((n,n))
+
+
+
+        sqdist_Y <span style=color:#f92672>=</span> euclidean_distances(Y, Y, squared<span style=color:#f92672>=</span><span style=color:#66d9ef>True</span>)
+
+        <span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(n):
+
+            <span style=color:#66d9ef>for</span> j <span style=color:#f92672>in</span> range(n):
+
+                Q[i,j] <span style=color:#f92672>=</span> <span style=color:#ae81ff>1.</span><span style=color:#f92672>/</span>(<span style=color:#ae81ff>1.</span> <span style=color:#f92672>+</span> sqdist_Y[i,j])
+
+
+
+        Q[range(n), range(n)] <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>  <span style=color:#75715e># set diagnonal as 0</span>
+
+        num <span style=color:#f92672>=</span> Q<span style=color:#f92672>.</span>copy()
+
+        Q <span style=color:#f92672>=</span> Q <span style=color:#f92672>/</span> np<span style=color:#f92672>.</span>sum(Q)
+
+        Q <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>maximum(Q, <span style=color:#ae81ff>1e-12</span>)
+
+
+
+
+
+        <span style=color:#75715e># Compute gradient</span>
+
+        PQ <span style=color:#f92672>=</span> P <span style=color:#f92672>-</span> Q
+
+        <span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(n):
+
+            tmp <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>tile(PQ[:, i] <span style=color:#f92672>*</span> num[:, i], (<span style=color:#ae81ff>2</span>, <span style=color:#ae81ff>1</span>))  <span style=color:#75715e>#(p_ij - q_ij)(1 + ||y_i - y_j||)^-1 part</span>
+
+            gradient[i, :] <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>sum(tmp<span style=color:#f92672>.</span>T <span style=color:#f92672>*</span> (Y[i, :] <span style=color:#f92672>-</span> Y), <span style=color:#ae81ff>0</span>)
+
+
+
+        <span style=color:#75715e># Perform the update</span>
+
+        <span style=color:#66d9ef>if</span> t <span style=color:#f92672>&lt;</span> <span style=color:#ae81ff>250</span>:
+
+            momentum <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.5</span>
+
+        <span style=color:#66d9ef>else</span>:
+
+            momentum <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.8</span>
+
+
+
+        iY_2 <span style=color:#f92672>=</span> iY_1<span style=color:#f92672>.</span>copy()
+
+        iY_1 <span style=color:#f92672>=</span> Y<span style=color:#f92672>.</span>copy()
+
+        Y <span style=color:#f92672>=</span> Y <span style=color:#f92672>-</span> eta<span style=color:#f92672>*</span>gradient <span style=color:#f92672>+</span> momentum <span style=color:#f92672>*</span> (iY_1 <span style=color:#f92672>-</span> iY_2)
+
+
+
+
+
+        <span style=color:#75715e># if (t + 1) % 10 == 0:</span>
+
+        <span style=color:#75715e>#     C = np.sum(P * np.log(P / Q))</span>
+
+        <span style=color:#75715e>#     print(&#34;Iteration %d: error is %f&#34; % (t + 1, C))</span>
+
+
+
+    <span style=color:#66d9ef>return</span> Y
+</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>Y <span style=color:#f92672>=</span> tsnse(data_numbers, <span style=color:#ae81ff>30</span>, <span style=color:#ae81ff>1000</span>, eta <span style=color:#f92672>=</span> <span style=color:#ae81ff>200</span>)
+</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>plot_embedding(Y, color_map)
+</code></pre></div><p><img src=output_58_0.png alt=png></p>
+<p>The code seems to be working but it is quite slow. If one wants to do t-sne for data visualization, there is a module in the sklearn library, which is significantly faster.</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#f92672>from</span> sklearn.manifold <span style=color:#f92672>import</span> TSNE
+
+embedding_tsne <span style=color:#f92672>=</span> TSNE(n_components<span style=color:#f92672>=</span><span style=color:#ae81ff>2</span>, learning_rate<span style=color:#f92672>=</span><span style=color:#ae81ff>200</span>, perplexity<span style=color:#f92672>=</span><span style=color:#ae81ff>30</span>, early_exaggeration<span style=color:#f92672>=</span><span style=color:#ae81ff>12</span>)<span style=color:#f92672>.</span>fit_transform(data_numbers)
+</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>plot_embedding(embedding_tsne, color_map)
+</code></pre></div><p><img src=output_61_0.png alt=png></p>
+</div>
+</div>
+</div>
+<div class="layui-col-md4 layui-col-sm12 layui-col-xs12">
+<div class="layui-card single-card">
+<h2 class=single-title>Recent Posts</h2>
+<div style=margin-left:10px>
+<blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
+<a href=/post/data_visualization/>
+<h3>Data Visualization and Data Reduction</h3>
+</a>
+<h3 style=margin-top:10px;margin-bottom:10px>
+<i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<span>2021-08-30</span>
+<i class="layui-icon layui-icon-list" style=font-size:32px;vertical-align:-3px></i>
+<a href=/categories/data-analysis/>
+<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Data Analysis</span>
+</a>
+<i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
+<a href=/tags/dimension-reduction/>
+<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Dimension Reduction</span>
+</a>
+<a href=/tags/visualization/>
+<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Visualization</span>
+</a>
+</h3>
+</blockquote>
+</div>
+<br>
+</div>
+</div>
+</div>
+</div>
+</div><footer>
+<div class=layui-container>
+<p class=copyright>&copy; All rights reserved. Powered by <a href=https://gohugo.io style=color:#fff>Hugo</a>, <a href=https://github.com/ertuil/erblog style=color:#fff>Erblog</a> and <a href=https://github.com/vlunot/nb2hugo style=color:#fff>nb2hugo</a>.</p>
+</div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,91 @@
+<html>
+<head>
+<meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<title>My Site - Categories </title>
+<meta content="My Site" name=keywords>
+<meta content="My Site - A website called My Site" name=description>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<link href=/categories/index.xml rel=alternate type=application/rss+xml title="My Site">
+<link href=/categories/index.xml rel=feed type=application/rss+xml title="My Site">
+<script type=text/x-mathjax-config>
+        MathJax.Hub.Config({
+            extensions: ["tex2jax.js"],
+            jax: ["input/TeX", "output/HTML-CSS"],
+            tex2jax: {
+                inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+                displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+                processEscapes: true
+            },
+            "HTML-CSS": { availableFonts: ["TeX"] }
+        });
+    </script>
+<script src=https://cdn.jsdelivr.net/npm/mathjax@3.0.5/es5/tex-mml-chtml.js integrity="sha256-HGLuEfFcsUJGhvB8cQ8nr0gai9EucOOaIxFw7qxmd+w=" crossorigin=anonymous></script>
+<link rel=stylesheet href=/layui/css/layui.css>
+<link rel=stylesheet href=/self/css/default.css>
+<script src=/layui/layui.js></script>
+<link rel=stylesheet async href=/self/css/markdown.min.css>
+<link rel=stylesheet async href=/self/css/gallery.css>
+<script src=https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin=anonymous></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css integrity="sha256-eZrrJcwDc/3uDhsdt61sL2oOBY362qM3lon1gyExkL0=" crossorigin=anonymous>
+<script async src=https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js integrity="sha256-h2tMEmhemR2IN4wbbdNjj9LaDIjzwk2hralQwfJmBOE=" crossorigin=anonymous></script></head>
+<body>
+<header class="layui-header layui-bg-cyan">
+<a class=nav-self-logo href=/>
+My Site
+</a>
+<ul class="layui-nav layui-layout-right layui-bg-cyan" lay-filter>
+<li class=layui-nav-item id=nav_big><a href=/post/>Posts</a></li>
+<li class=layui-nav-item id=nav_big><a href=/about/>About</a></li>
+<li class=layui-nav-item id=nav_small>
+<a href=javascript:;>
+<i class="layui-icon layui-icon-app" style=font-size:24px></i>
+</a>
+<dl class=layui-nav-child>
+<dd><a href=/post/>Posts</a></dd>
+<dd><a href=/about/>About</a></dd>
+</dl>
+</li>
+</ul>
+</header>
+<script>layui.use('element',function(){var a=layui.element})</script>
+<div id=content style=min-height:80%>
+<main id=main>
+<div class=layui-container>
+<blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
+<a href=/categories/data-analysis/>
+<h2>Data Analysis</h2>
+</a>
+<h3 style=margin-top:10px;margin-bottom:10px>
+<i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<span>2021-08-30</span>
+</h3>
+<h3>
+<a href=/categories/data-analysis/><span style=color:#01aaed>Read More</span></a>
+</h3>
+</blockquote>
+<div class=pager>
+<div class=layui-btn-group>
+<button type=button class="layui-btn layui-btn-primary layui-btn-sm">
+<a href=/categories/><i class=layui-icon>&#xe65a;</i></a>
+</button>
+<button type=button class="layui-btn layui-btn-disabled layui-btn-sm">
+<i class=layui-icon>&#xe603;</i>
+</button>
+<button type=button class="layui-btn layui-btn-disabled layui-btn-sm">
+<i class=layui-icon>&#xe602;</i>
+</button>
+<button type=button class="layui-btn layui-btn-primary layui-btn-sm">
+<a href=/categories/><i class=layui-icon>&#xe65b;</i></a>
+</button>
+</div>
+</div>
+</div>
+</main>
+</div><footer>
+<div class=layui-container>
+<p class=copyright>&copy; All rights reserved. Powered by <a href=https://gohugo.io style=color:#fff>Hugo</a>, <a href=https://github.com/ertuil/erblog style=color:#fff>Erblog</a> and <a href=https://github.com/vlunot/nb2hugo style=color:#fff>nb2hugo</a>.</p>
+</div>
+</footer>
+</body>
+</html>
