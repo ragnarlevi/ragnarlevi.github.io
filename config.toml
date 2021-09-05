@@ -1,5 +1,5 @@
 baseURL = "https://ragnarlevi.github.io/"
-title = "My Site"
+title = "Ragnar"
 theme = "erblog"
 paginate = 3
 languageCode = "en"
