@@ -250,6 +250,7 @@ footer {
     font-size: 1.0625rem;
     font-display: swap;
     color: #ffffff;
+    clear:both; /* push below right and left floating elements */
 }
 
 #content {
