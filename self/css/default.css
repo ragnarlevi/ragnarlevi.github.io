@@ -314,3 +314,8 @@ footer {
 .self-elem-quote-bg-blue {border-left-color: #1E9FFF!important;}
 .self-elem-quote-bg-black {border-left-color: #393D49!important;}
 .self-elem-quote-bg-gray {border-left-color: #666!important;}
+
+
+.language-python {
+    line-height: 1;
+}
