@@ -2,8 +2,7 @@
 title = "Data Visualization and Data Reduction"
 date = "2021-08-30"
 author = "Ragnar Levi Gudmundarson"
-categories = ["Data Analysis"]
-tags = ["Dimension Reduction", "Visualization"]
+tags = ["Dimension Reduction", "Visualization", "Data Analysis"]
 +++
 
 

@@ -51,8 +51,8 @@ footnoteReturnLinkContents = "^"
     weight = 2
 
 [taxonomies]
-category = "Categories"
-tag = "Tags"
+# category = "Categories"
+tag = "tags"
 # series = "series"
 
 # [[menu.icon]]
