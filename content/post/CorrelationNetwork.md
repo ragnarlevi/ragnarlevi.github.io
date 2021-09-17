@@ -242,7 +242,7 @@ C_g = np.dot(V[:,1:(N_g+1)], np.diag(w[1:(N_g+1)])).dot(V[:,1:(N_g+1)].T)
 C_g[C_g<0] = 0
 ```
 
-Now we want to use the group correlation matrix to find the groups of stocks. The stocks in each block should be correlated but stocks between different groups should not be correlated. That is we have intra-correlation but not inter-correlation. This means that the group correlation matrix should be block diagonalizable. As an example, a group correlation matrix with 3 groups should having the following pattern:
+One problem with this approach is that $C_g$ is not a real correlation matrix (as the diagonals are not one anymore). Therefore, we should project the data onto the eigenvector corresponding to the market and the random noise and subtract it from the origin data set. After doing so once should then construct the group correlation matrix from the new data. However, I will skip that step for now. We want to use the group correlation matrix to find the groups of stocks. The stocks in each block should be correlated but stocks between different groups should not be correlated. That is we have intra-correlation but not inter-correlation. This means that the group correlation matrix should be block diagonalizable. As an example, a group correlation matrix with 3 groups should having the following pattern:
 
 
 
