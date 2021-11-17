@@ -210,7 +210,7 @@ X_projected <span style=color:#f92672>=</span> data_numbers<span style=color:#f9
 
     <span style=color:#66d9ef>if</span> type(score) <span style=color:#f92672>!=</span> <span style=color:#e6db74>&#39;numpy.ndarray&#39;</span>:
 
-        score <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array(X_projected)
+        score <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array(score)
 
 
 
@@ -280,7 +280,7 @@ pca<span style=color:#f92672>.</span>singular_values_
 </code></pre>
 <div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>myBiplot(X_projected_pca_scipy,np<span style=color:#f92672>.</span>transpose(pca<span style=color:#f92672>.</span>components_[<span style=color:#ae81ff>0</span>:<span style=color:#ae81ff>2</span>, :]), labels <span style=color:#f92672>=</span> numerical_variables, color <span style=color:#f92672>=</span> color_map, alpha <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.5</span>)
 </code></pre></div><p><img src=output_20_0.png alt=png></p>
-<p>This is the same picture, just upside down as the eigenvector signs are irrelevant.</p>
+<p>This is the same picture, just upside down. This is because the eigenvector signs are irrelevant, if \(u\) is an unit eigenvector then \(-u\) is an unit eigenvector as well.</p>
 <p>Remark: Scipy uses SVD on X which is another method of getting the PCA score. That is we can perform a SVD on \(X\) to obtain \(X = USV^T\). From this equation we can obtain the covariance matrix as:</p>
 <p>\[C = X^TX = \frac{VSU^TYSV^T}{n-1} = \frac{VS^2V^T}{n-1}\]</p>
 <p>so the eigenvalues of C can be obtained as \(\lambda_i = s_i^2/(n-1)\) where \(s_i\) is the corresponding eigenvalue of \(X\). The principal components is then obtained as \(XV = USV^TV = US\)</p>
@@ -468,7 +468,7 @@ plot_embedding(transformer<span style=color:#f92672>.</span>alphas_, color_map)
 <h2 id=the-metric-mds>The metric mds</h2>
 <p>Is a generalization of the classical mds which allows for a variety of loss functions. The most widely used loss function is called s tress. see the wiki for more information.</p>
 <h2 id=the-isomap>The Isomap</h2>
-<p>Isomap generalizes the metric mds where the idea is to perform MDS not on the input space but rather on the geodesic space of the nonlinear data manifold. The first step is to find the nearest neighbours of each data point in high-dimensional data space, this generates a graph where each node is a data point and the edges connect the nearest neighbours of each data point and the weight of the edge is the input space distance. The second step is to calculate the geodesic pairwise distances between all points by using the a shortest path algorithm, for example, Dijkstra�s algorithm or Floyd�s algorithm. Finally the metric mds embedding is used. The disadvantage is of isomats are potential �short-circuits�, in which a single noisy datapoint provides a bridge between two regions of dataspace that should be far apart in the low-dimensional representation.</p>
+<p>Isomap generalizes the metric mds where the idea is to perform MDS not on the input space but rather on the geodesic space of the nonlinear data manifold. The first step is to find the nearest neighbours of each data point in high-dimensional data space, this generates a graph where each node is a data point and the edges connect the nearest neighbours of each data point and the weight of the edge is the input space distance. The second step is to calculate the geodesic pairwise distances between all points by using the a shortest path algorithm, for example, Dijkstra&rsquo;s algorithm or Floyd&rsquo;s algorithm. Finally the metric mds embedding is used. The disadvantage is of isomats are potential short-circuits, in which a single noisy datapoint provides a bridge between two regions of dataspace that should be far apart in the low-dimensional representation.</p>
 <p>The disadvantage of these methods is that they are generally not used on unseen data although it <a href=https://papers.nips.cc/paper/2003/file/cf05968255451bdefe3c5bc64d550517-Paper.pdf>can be done</a></p>
 <div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>mds</span>(D, p):
 
@@ -1045,6 +1045,45 @@ embedding_tsne <span style=color:#f92672>=</span> TSNE(n_components<span style=c
 <div class="layui-col-md4 layui-col-sm12 layui-col-xs12">
 <div class="layui-card single-card">
 <h2 class=single-title>Recent Posts</h2>
+<div style=margin-left:10px>
+<blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
+<a href=/post/extremes/>
+<h3>Quntitative Risk Analysis</h3>
+</a>
+<h3 style=margin-top:10px;margin-bottom:10px>
+<i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<span>2021-11-17</span>
+<i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
+<a href=/tags/risk/>
+<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Risk</span>
+</a>
+<a href=/tags/extremes/>
+<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Extremes</span>
+</a>
+</h3>
+</blockquote>
+</div>
+<div style=margin-left:10px>
+<blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
+<a href=/post/deepkernel/>
+<h3>Deep Graph Kernels</h3>
+</a>
+<h3 style=margin-top:10px;margin-bottom:10px>
+<i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<span>2021-11-16</span>
+<i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
+<a href=/tags/graph/>
+<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Graph</span>
+</a>
+<a href=/tags/classification/>
+<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Classification</span>
+</a>
+<a href=/tags/kernel/>
+<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Kernel</span>
+</a>
+</h3>
+</blockquote>
+</div>
 <div style=margin-left:10px>
 <blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
 <a href=/post/correlationnetwork/>
