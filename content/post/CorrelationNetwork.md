@@ -69,7 +69,7 @@ C = price_pivot.corr()
 
 
 
-Let's eaxamine  the eigenvectors. Only a few components contribute to each eigenvector, and the stocks corresponding to those dominant components of the eigenvector are usually found to belong to a common industry. We can test this by doing a simple plot. 
+Let's examine  the eigenvectors. Only a few components contribute to each eigenvector, and the stocks corresponding to those dominant components of the eigenvector are usually found to belong to a common industry. We can test this by doing a simple plot. 
 
 
 ```python
@@ -184,7 +184,7 @@ The figure shows the eigenvalues entries squared. We see that the first eigenvec
 
 
 
-We are interested in decomposing the correlation matrix into the market correlation $C^m$, group correlation $C^g$ and the random noise $C^n$. The idea behind group identification is pretty simple. We simply assume that the correlation matrix can be written as.
+We are interested in decomposing the correlation matrix into the market correlation \\(C^m\\), group correlation \\(C^g\\) and the random noise \\(C^n\\). The idea behind group identification is pretty simple. We simply assume that the correlation matrix can be written as.
 
 
 
@@ -192,7 +192,7 @@ $$C = C^m + C^g + C^n = \lambda_0u_0u_0^T + \sum_{i=1}^{N_g} \lambda_i u_i u_i^T
 
 
 
-Determining the market correlation is straight forward as it is simply the outer-product of the eigenvector corresponding to the largest eigenvalue. Determining $N_g$ is more difficult, but we can do it graphically. It has been shown that the bulk of the eigenvalues of the stock matrix are in remarkable agreements with the universal properties of the random correlation matrix. Therefore, we simply choose the eigenvalues that are outside of the bulk.
+Determining the market correlation is straight forward as it is simply the outer-product of the eigenvector corresponding to the largest eigenvalue. Determining \\(N_g\\) is more difficult, but we can do it graphically. It has been shown that the bulk of the eigenvalues of the stock matrix are in remarkable agreements with the universal properties of the random correlation matrix. Therefore, we simply choose the eigenvalues that are outside of the bulk.
 
 
 ```python
@@ -213,7 +213,7 @@ ticks = plt.xticks(range(51))
     
 
 
-From this figure we can see that eigenvalues above $\sim$ 3 are not inside of the "bulk". So we just calculate the number of eigenvalues above 3.
+From this figure we can see that eigenvalues above \\(\sim\\) 3 are not inside of the "bulk". So we just calculate the number of eigenvalues above 3.
 
 
 ```python
@@ -242,7 +242,7 @@ C_g = np.dot(V[:,1:(N_g+1)], np.diag(w[1:(N_g+1)])).dot(V[:,1:(N_g+1)].T)
 C_g[C_g<0] = 0
 ```
 
-One problem with this approach is that $C_g$ is not a real correlation matrix (as the diagonals are not one anymore). Therefore, we should project the data onto the eigenvector corresponding to the market and the random noise and subtract it from the origin data set. After doing so once should then construct the group correlation matrix from the new data. However, I will skip that step for now. We want to use the group correlation matrix to find the groups of stocks. The stocks in each block should be correlated but stocks between different groups should not be correlated. That is we have intra-correlation but not inter-correlation. This means that the group correlation matrix should be block diagonalizable. As an example, a group correlation matrix with 3 groups should having the following pattern:
+One problem with this approach is that \\(C_g\\) is not a real correlation matrix (as the diagonals are not one anymore). Therefore, we should project the data onto the eigenvector corresponding to the market and the random noise and subtract it from the origin data set. After doing so once should then construct the group correlation matrix from the new data. However, I will skip that step for now. We want to use the group correlation matrix to find the groups of stocks. The stocks in each block should be correlated but stocks between different groups should not be correlated. That is we have intra-correlation but not inter-correlation. This means that the group correlation matrix should be block diagonalizable. As an example, a group correlation matrix with 3 groups should having the following pattern:
 
 
 
@@ -278,7 +278,7 @@ $$ E = \sum_{i < j} C_{ij}^g |l_i - l_j|\boldsymbol{1} (C_{ij}^g -c_c >0)$$
 
 
 
-where $l_i$ is the position of stock $i$ in the new index sequence. We can choose whatever cutoff $c_c$ we want. I will simply use $c_c = 0$. One optimization method that can be used to approximate combinatorial hard problem is simulated annealing. The following code creates a class that can perform our optimization task.
+where \\(l_i\\) is the position of stock \\(i\\) in the new index sequence. We can choose whatever cutoff \\(c_c\\) we want. I will simply use \\(c_c = 0\\). One optimization method that can be used to approximate combinatorial hard problem is simulated annealing. The following code creates a class that can perform our optimization task.
 
 
 ```python

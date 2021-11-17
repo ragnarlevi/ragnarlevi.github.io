@@ -226,7 +226,7 @@ def myBiplot(score,coeff,labels, color, alpha = 1):
 
     if type(score) != 'numpy.ndarray':
 
-        score = np.array(X_projected)
+        score = np.array(score)
 
 
 
@@ -327,7 +327,7 @@ myBiplot(X_projected_pca_scipy,np.transpose(pca.components_[0:2, :]), labels = n
     
 
 
-This is the same picture, just upside down as the eigenvector signs are irrelevant.
+This is the same picture, just upside down. This is because the eigenvector signs are irrelevant, if \\(u\\) is an unit eigenvector then \\(-u\\) is an unit eigenvector as well.
 
 Remark: Scipy uses SVD on X which is another method of getting the PCA score. That is we can perform a SVD on \\(X\\) to obtain \\(X = USV^T\\). From this equation we can obtain the covariance matrix as:
 
@@ -654,7 +654,7 @@ Is a generalization of the classical mds which allows for a variety of loss func
 
 
 
-Isomap generalizes the metric mds where the idea is to perform MDS not on the input space but rather on the geodesic space of the nonlinear data manifold. The first step is to find the nearest neighbours of each data point in high-dimensional data space, this generates a graph where each node is a data point and the edges connect the nearest neighbours of each data point and the weight of the edge is the input space distance.  The second step is to calculate the geodesic pairwise distances between all points by using the a shortest path algorithm, for example, Dijkstra�s algorithm or Floyd�s algorithm. Finally the metric mds embedding is used. The disadvantage is of isomats are potential �short-circuits�, in which a single noisy datapoint provides a bridge between two regions of dataspace that should be far apart in the low-dimensional representation.
+Isomap generalizes the metric mds where the idea is to perform MDS not on the input space but rather on the geodesic space of the nonlinear data manifold. The first step is to find the nearest neighbours of each data point in high-dimensional data space, this generates a graph where each node is a data point and the edges connect the nearest neighbours of each data point and the weight of the edge is the input space distance.  The second step is to calculate the geodesic pairwise distances between all points by using the a shortest path algorithm, for example, Dijkstra's algorithm or Floyd's algorithm. Finally the metric mds embedding is used. The disadvantage is of isomats are potential short-circuits, in which a single noisy datapoint provides a bridge between two regions of dataspace that should be far apart in the low-dimensional representation.
 
 
 
