@@ -2,7 +2,7 @@
 title = "Group Identification in Stock Markets"
 date = "2021-09-16"
 author = "Ragnar Levi Gudmundarson"
-tags = ["Risk", "Optimization", "Correlation"]
+tags = ["Risk"]
 +++
 
 # Introduction
