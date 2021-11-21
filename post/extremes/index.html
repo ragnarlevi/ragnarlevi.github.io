@@ -4,10 +4,7 @@
 <meta name=viewport content="width=device-width,initial-scale=1">
 <title>Ragnar - Quntitative Risk Analysis </title>
 <meta content="Risk,Extremes" name=keywords>
-<meta content="Ragnar - International banking regulations require banks to pay specic attention to the probability of large losses over short periods of time
-Furthermore, use of the empirical distribution will mean that simulated future observations can never exceed the maximum historical observation. This makes simulation of extreme values problematic.
-Underestimating the dependence among extreme risks can lead to serious consequences, as for instance those we experienced during the last financial crisis
-Including extreme risks in probabilistic models is recognized nowadays as a necessary condition for good risk management in any institution, and not restricted anymore to reinsurance companies, who are the providers of covers for natural catastrophes" name=description>
+<meta content="Ragnar - In this notebook I will discuss the basic ideas of modelling quantiles and copula dependence. These ideas are important for risk managers as International banking regulations require banks to pay specific attention to the probability of large losses over short periods of time and undeerestimation of dependence among extreme risks can lead to serious consequences, as for instance those we experienced during the last financial crisis. Including extreme risks in probabilistic models is recognized nowadays as a necessary condition for good risk management in any institution, and not restricted anymore to reinsurance companies, who are the providers of covers for natural catastrophes." name=description>
 <meta name=viewport content="width=device-width,initial-scale=1">
 <script type=text/x-mathjax-config>
         MathJax.Hub.Config({
@@ -71,13 +68,7 @@ Ragnar
 </h3>
 </blockquote>
 <div class="layui-card-body markdown-body single-content">
-<p>International banking regulations require banks to pay speci c attention to the
-probability of large losses over short periods of time</p>
-<p>Furthermore, use of the empirical distribution will mean that simulated future
-observations can never exceed the maximum historical observation. This makes
-simulation of extreme values problematic.</p>
-<p>Underestimating the dependence among extreme risks can lead to serious consequences, as for instance those we experienced during the last financial crisis</p>
-<p>Including extreme risks in probabilistic models is recognized nowadays as a necessary condition for good risk management in any institution, and not restricted anymore to reinsurance companies, who are the providers of covers for natural catastrophes</p>
+<p>In this notebook I will discuss the basic ideas of modelling quantiles and copula dependence. These ideas are important for risk managers as International banking regulations require banks to pay specific attention to the probability of large losses over short periods of time and undeerestimation of dependence among extreme risks can lead to serious consequences, as for instance those we experienced during the last financial crisis. Including extreme risks in probabilistic models is recognized nowadays as a necessary condition for good risk management in any institution, and not restricted anymore to reinsurance companies, who are the providers of covers for natural catastrophes. One of the main problems that come up is the fact that the observed data usually only includes few extreme obervations and the never exceed the maximum historical observation, meaning we only have a truncated version of the &ldquo;real&rdquo; distribution. This makes simulation of extreme values problematic. For a more detailed overview see <a href=https://www.econbiz.de/Record/an-application-of-extreme-value-theory-for-measuring-financial-risk-gilli-manfred/10005701798>Gilli</a> or <a href=https://link.springer.com/chapter/10.1007/978-3-030-04161-8_51>Kratz</a></p>
 <div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#f92672>import</span> numpy <span style=color:#66d9ef>as</span> np
 <span style=color:#f92672>import</span> requests
 <span style=color:#f92672>import</span> pandas <span style=color:#66d9ef>as</span> pd
@@ -525,9 +516,6 @@ v <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array([
 <i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
 <span>2021-08-30</span>
 <i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
-<a href=/tags/dimension-reduction/>
-<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Dimension Reduction</span>
-</a>
 <a href=/tags/visualization/>
 <span class="layui-badge layui-bg-orange" style=vertical-align:2px>Visualization</span>
 </a>
