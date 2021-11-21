@@ -5,17 +5,8 @@ author = "Ragnar Levi Gudmundarson"
 tags = ["Risk", "Extremes"]
 +++
 
+In this notebook I will discuss the basic ideas of modelling quantiles and copula dependence. These ideas are important for risk managers as International banking regulations require banks to pay specific attention to the probability of large losses over short periods of time and undeerestimation of dependence among extreme risks can lead to serious consequences, as for instance those we experienced during the last financial crisis. Including extreme risks in probabilistic models is recognized nowadays as a necessary condition for good risk management in any institution, and not restricted anymore to reinsurance companies, who are the providers of covers for natural catastrophes. One of the main problems that come up is the fact that the observed data usually only includes few extreme obervations and the never exceed the maximum historical observation, meaning we only have a truncated version of the "real" distribution. This makes simulation of extreme values problematic. For a more detailed overview see [Gilli](https://www.econbiz.de/Record/an-application-of-extreme-value-theory-for-measuring-financial-risk-gilli-manfred/10005701798) or [Kratz](https://link.springer.com/chapter/10.1007/978-3-030-04161-8_51)
 
-International banking regulations require banks to pay specic attention to the
-probability of large losses over short periods of time
-
-Furthermore, use of the empirical distribution will mean that simulated future
-observations can never exceed the maximum historical observation. This makes
-simulation of extreme values problematic.
-
-Underestimating the dependence among extreme risks can lead to serious consequences, as for instance those we experienced during the last financial crisis
-
-Including extreme risks in probabilistic models is recognized nowadays as a necessary condition for good risk management in any institution, and not restricted anymore to reinsurance companies, who are the providers of covers for natural catastrophes
 
 
 ```python
