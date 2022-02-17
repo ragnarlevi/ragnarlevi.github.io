@@ -57,7 +57,7 @@ where $M$ is a $|\mathcal{V}| \times |\mathcal{V}|$ psd matrix that encodes the 
 
 $$\phi: G \mapsto \phi(G) = (tf(t_1, G), \dots, tf(T_N, G)) \in {R}^N$$
 
-where \\(tf(t_1, G\\) is the frequency of sub-structure \\(t_1\\) in graph \\(G\\).  If \\(M_{12}\\) is large then sub-structure number 1 and 2 are similar but if it is low then they are dissimilar. Given some sub-structures we want to find a good edit-distance to encode the similarity between two sub-structures. A sub-structure is a very general concept. This means that the user can pre-determine which he or she thinks is important for the classification task at hand. Here I will present sub-structures based on the Weisfeiler-Lehman iteration scheme and the shortest-path.
+where \\(tf(t_1, G)\\) is the frequency of sub-structure \\(t_1\\) in graph \\(G\\).  If \\(M_{12}\\) is large then sub-structure number 1 and 2 are similar but if it is low then they are dissimilar. Given some sub-structures we want to find a good edit-distance to encode the similarity between two sub-structures. A sub-structure is a very general concept. This means that the user can pre-determine which he or she thinks is important for the classification task at hand. Here I will present sub-structures based on the Weisfeiler-Lehman iteration scheme and the shortest-path.
 
 
 
