@@ -2,8 +2,7 @@
 <head>
 <meta charset=utf-8>
 <meta name=viewport content="width=device-width,initial-scale=1">
-<title>Ragnar - Group Identification in Stock Markets </title>
-<meta content="Risk" name=keywords>
+<title>Ragnar - Group Identification in Stock Markets </title><meta content="Risk" name=keywords>
 <meta content="Ragnar - Introduction In this notebook I will be trying to replicate the work of Dong-Hee Kim and Hawoong Jeong. The goal is to look at the eigen decomposition of the return correlation matrix. The decomposition allows us to separate the correlation into three parts. Namely, the marketwide effect, group correlation matrix and a random noise part. By filtering out the marketwide effect and the random noise, we can look at nontrivial correlation of stock groups." name=description>
 <meta name=viewport content="width=device-width,initial-scale=1">
 <script type=text/x-mathjax-config>
@@ -26,27 +25,18 @@
 <link rel=stylesheet async href=/self/css/gallery.css>
 <script src=https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin=anonymous></script>
 <link rel=stylesheet href=https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css integrity="sha256-eZrrJcwDc/3uDhsdt61sL2oOBY362qM3lon1gyExkL0=" crossorigin=anonymous>
-<script async src=https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js integrity="sha256-h2tMEmhemR2IN4wbbdNjj9LaDIjzwk2hralQwfJmBOE=" crossorigin=anonymous></script></head>
-<body>
+<script async src=https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js integrity="sha256-h2tMEmhemR2IN4wbbdNjj9LaDIjzwk2hralQwfJmBOE=" crossorigin=anonymous></script></head><body>
 <header class="layui-header layui-bg-cyan">
 <a class=nav-self-logo href=/>
 Ragnar
 </a>
 <ul class="layui-nav layui-layout-right layui-bg-cyan" lay-filter>
-<li class=layui-nav-item id=nav_big><a href=/post/>Posts</a></li>
-<li class=layui-nav-item id=nav_big><a href=/about/>About</a></li>
-<li class=layui-nav-item id=nav_small>
+<li class=layui-nav-item id=nav_big><a href=/post/>Posts</a></li><li class=layui-nav-item id=nav_big><a href=/about/>About</a></li><li class=layui-nav-item id=nav_small>
 <a href=javascript:;>
 <i class="layui-icon layui-icon-app" style=font-size:24px></i>
 </a>
 <dl class=layui-nav-child>
-<dd><a href=/post/>Posts</a></dd>
-<dd><a href=/about/>About</a></dd>
-</dl>
-</li>
-</ul>
-</header>
-<script>layui.use('element',function(){var a=layui.element})</script>
+<dd><a href=/post/>Posts</a></dd><dd><a href=/about/>About</a></dd></dl></li></ul></header><script>layui.use("element",function(){var e=layui.element})</script>
 <div id=content style=min-height:80%>
 <div class=layui-container style=margin-bottom:10px>
 <div class="layui-row layui-col-space10">
@@ -54,406 +44,368 @@ Ragnar
 <div class="layui-card single-card">
 <br>
 <blockquote class="self-elem-quote self-elem-quote-bg-red markdown-body single-title">
-<h1>Group Identification in Stock Markets</h1>
-<h3 style=margin-top:10px;margin-bottom:10px>
+<h1>Group Identification in Stock Markets</h1><h3 style=margin-top:10px;margin-bottom:10px>
 <i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
 <span>2021-09-16</span>
 <i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
 <a href=/tags/risk/>
 <span class="layui-badge layui-bg-orange" style=vertical-align:2px>Risk</span>
 </a>
-</h3>
-</blockquote>
-<div class="layui-card-body markdown-body single-content">
-<h1 id=introduction>Introduction</h1>
-<p>In this notebook I will be trying to replicate the work of <a href=https://journals.aps.org/pre/abstract/10.1103/PhysRevE.72.046133>Dong-Hee Kim and Hawoong Jeong</a>. The goal is to look at the eigen decomposition of the return correlation matrix. The decomposition allows us to separate the correlation into three parts. Namely, the marketwide effect, group correlation matrix and a random noise part. By filtering out the marketwide effect and the random noise, we can look at nontrivial correlation of stock groups. That is, we have will be able to identify groups of stocks that are highly correlated after taking the market correlation out of the equation. This is important as we know that the market conditions drive the stock returns and thus by filtering out the marketwide effect we have a better understanding of how diversified our portfolio is. In order to identify the groups we will use an optimization method called simulated annealing.</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#f92672>import</span> numpy <span style=color:#66d9ef>as</span> np
-
-<span style=color:#f92672>import</span> matplotlib.pyplot <span style=color:#66d9ef>as</span> plt
-
-<span style=color:#f92672>import</span> seaborn <span style=color:#66d9ef>as</span> sns
-
-<span style=color:#f92672>import</span> pandas <span style=color:#66d9ef>as</span> pd
-
-<span style=color:#f92672>from</span> scipy.linalg <span style=color:#f92672>import</span> eigh
-</code></pre></div><h1 id=calculating-the-correlation-matrix>Calculating the Correlation matrix</h1>
-<p>We start by calculating the correlation matrix. We will only consider data from 2011-01-01 until 2021-08-15</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>asset_profiles <span style=color:#f92672>=</span> pd<span style=color:#f92672>.</span>read_excel(<span style=color:#e6db74>&#34;data/YAHOO_PRICE_ESG.xlsx&#34;</span>, sheet_name<span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;asset_profiles&#39;</span>) 
-
-price_data <span style=color:#f92672>=</span> pd<span style=color:#f92672>.</span>read_csv(<span style=color:#e6db74>&#34;data/YAHOO_PRICE.csv&#34;</span>)
-
-
-
-price_data[<span style=color:#e6db74>&#39;timestamp&#39;</span>] <span style=color:#f92672>=</span> pd<span style=color:#f92672>.</span>to_datetime(price_data[<span style=color:#e6db74>&#39;timestamp&#39;</span>])
-
-price_filtered <span style=color:#f92672>=</span> price_data<span style=color:#f92672>.</span>loc[price_data[<span style=color:#e6db74>&#39;timestamp&#39;</span>] <span style=color:#f92672>&gt;</span> <span style=color:#e6db74>&#39;2011-01-01 04:00:00&#39;</span>, price_data<span style=color:#f92672>.</span>columns]
-
-price_filtered[<span style=color:#e6db74>&#39;date&#39;</span>] <span style=color:#f92672>=</span> price_filtered[<span style=color:#e6db74>&#39;timestamp&#39;</span>]<span style=color:#f92672>.</span>dt<span style=color:#f92672>.</span>date
-
-
-
-price_filtered[<span style=color:#e6db74>&#39;return&#39;</span>] <span style=color:#f92672>=</span> price_filtered<span style=color:#f92672>.</span>sort_values(<span style=color:#e6db74>&#39;date&#39;</span>)<span style=color:#f92672>.</span>groupby([<span style=color:#e6db74>&#39;ticker&#39;</span>])<span style=color:#f92672>.</span>adjclose<span style=color:#f92672>.</span>pct_change()
-
-
-
-
-
-price_pivot <span style=color:#f92672>=</span> price_filtered[[<span style=color:#e6db74>&#39;ticker&#39;</span>, <span style=color:#e6db74>&#39;return&#39;</span>, <span style=color:#e6db74>&#39;date&#39;</span>]]<span style=color:#f92672>.</span>copy()
-
-price_pivot[<span style=color:#e6db74>&#39;return&#39;</span>] <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>log(<span style=color:#ae81ff>1</span> <span style=color:#f92672>+</span> price_pivot[<span style=color:#e6db74>&#39;return&#39;</span>])
-
-price_pivot <span style=color:#f92672>=</span> price_pivot<span style=color:#f92672>.</span>dropna()  <span style=color:#75715e># Drop rows which contain missing values</span>
-
-price_pivot <span style=color:#f92672>=</span> pd<span style=color:#f92672>.</span>pivot_table(price_pivot, values <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;return&#39;</span>, index <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;date&#39;</span>, columns<span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;ticker&#39;</span>)
-
-
-
-C <span style=color:#f92672>=</span> price_pivot<span style=color:#f92672>.</span>corr()
-</code></pre></div><h1 id=localization-of-eigenvectors>Localization of Eigenvectors</h1>
-<p>Let&rsquo;s examine the eigenvectors. Only a few components contribute to each eigenvector, and the stocks corresponding to those dominant components of the eigenvector are usually found to belong to a common industry. We can test this by doing a simple plot.</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#75715e># Eigen decomposition</span>
-
-w, V <span style=color:#f92672>=</span> eigh(C)
-
-w <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>flipud(w)
-
-V <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>fliplr(V)
-
-
-</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>V_df <span style=color:#f92672>=</span> pd<span style=color:#f92672>.</span>DataFrame(V)
-
-V_df[<span style=color:#e6db74>&#39;ticker&#39;</span>] <span style=color:#f92672>=</span> C<span style=color:#f92672>.</span>index
-
-V_df <span style=color:#f92672>=</span> pd<span style=color:#f92672>.</span>merge(V_df, asset_profiles, on <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;ticker&#39;</span>)
-
-V_df <span style=color:#f92672>=</span> V_df<span style=color:#f92672>.</span>sort_values(by <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;sector&#39;</span> )
-
-
-
-V_df[<span style=color:#e6db74>&#39;change&#39;</span>] <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>
-
-V_df[<span style=color:#e6db74>&#39;index&#39;</span>] <span style=color:#f92672>=</span> range(V_df<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>])
-
-last <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;&#39;</span>
-
-tick <span style=color:#f92672>=</span> []
-
-tick_sector <span style=color:#f92672>=</span> []
-
-<span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(V_df<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>):
-
-    <span style=color:#66d9ef>if</span> V_df[<span style=color:#e6db74>&#39;sector&#39;</span>]<span style=color:#f92672>.</span>iloc[i] <span style=color:#f92672>!=</span> V_df[<span style=color:#e6db74>&#39;sector&#39;</span>]<span style=color:#f92672>.</span>iloc[i<span style=color:#f92672>+</span><span style=color:#ae81ff>1</span>]:
-
-        V_df<span style=color:#f92672>.</span>loc[i, <span style=color:#e6db74>&#39;change&#39;</span>] <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>
-
-        tick<span style=color:#f92672>.</span>append(i)
-
-        tick_sector<span style=color:#f92672>.</span>append(V_df[<span style=color:#e6db74>&#39;sector&#39;</span>]<span style=color:#f92672>.</span>iloc[i])
-
-    <span style=color:#66d9ef>if</span> i <span style=color:#f92672>==</span> V_df<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>-</span><span style=color:#ae81ff>2</span>:
-
-        V_df<span style=color:#f92672>.</span>loc[i, <span style=color:#e6db74>&#39;change&#39;</span>] <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>
-
-        tick<span style=color:#f92672>.</span>append(i)
-
-        tick_sector<span style=color:#f92672>.</span>append(V_df[<span style=color:#e6db74>&#39;sector&#39;</span>]<span style=color:#f92672>.</span>iloc[i])
-
-
-
-
-
-
-</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>nr_eigen <span style=color:#f92672>=</span> <span style=color:#ae81ff>8</span>
-
-
-
-fig, ax <span style=color:#f92672>=</span> plt<span style=color:#f92672>.</span>subplots(nr_eigen, <span style=color:#ae81ff>1</span>, figsize<span style=color:#f92672>=</span>(<span style=color:#ae81ff>10</span>, <span style=color:#ae81ff>15</span>))
-
-
-
-plt<span style=color:#f92672>.</span>title(<span style=color:#e6db74>&#39;The eigenvalues squared.&#39;</span>)
-
-
-
-<span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(nr_eigen):
-
-    V_plot <span style=color:#f92672>=</span> V_df<span style=color:#f92672>.</span>iloc[:,i]
-
-   
-
-    ax[i]<span style=color:#f92672>.</span>plot(range(len(V_plot)), np<span style=color:#f92672>.</span>abs(V_plot) <span style=color:#f92672>**</span> <span style=color:#ae81ff>2</span>)
-
-    <span style=color:#66d9ef>for</span> j <span style=color:#f92672>in</span> tick:
-
-        ax[i]<span style=color:#f92672>.</span>axvline(j, color <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;black&#39;</span>)
-
-    ax[i]<span style=color:#f92672>.</span>set_title(<span style=color:#e6db74>f</span><span style=color:#e6db74>&#39;eigenvalue nr </span><span style=color:#e6db74>{</span>i<span style=color:#e6db74>}</span><span style=color:#e6db74>&#39;</span>)
-
-
-
-    <span style=color:#66d9ef>if</span> i <span style=color:#f92672>==</span> nr_eigen <span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>:
-
-        ax[i]<span style=color:#f92672>.</span>set_xticks(tick)
-
-        ax[i]<span style=color:#f92672>.</span>set_xticklabels(tick_sector, rotation <span style=color:#f92672>=</span> <span style=color:#ae81ff>90</span>)
-
-
-
-fig<span style=color:#f92672>.</span>subplots_adjust(hspace<span style=color:#f92672>=</span><span style=color:#ae81ff>.5</span>)
-</code></pre></div><p><img src=CorrelationNetwork_8_0.png alt=png></p>
-<p>The figure shows the eigenvalues entries squared. We see that the first eigenvector, which corresponds to the marketwide effect, has not real dominant values. The other eigenvector, however, seem to have dominant eigenvalue entries which seem relate to sectors. This is especially true for eigenvector nr. 4 where we the entries correspond to the energy sector.</p>
-<h1 id=group-identification>Group Identification</h1>
-<p>We are interested in decomposing the correlation matrix into the market correlation \(C^m\), group correlation \(C^g\) and the random noise \(C^n\). The idea behind group identification is pretty simple. We simply assume that the correlation matrix can be written as.</p>
-<p>$$C = C^m + C^g + C^n = \lambda_0u_0u_0^T + \sum_{i=1}^{N_g} \lambda_i u_i u_i^T + \sum_{i=N_g +1}^{N} \lambda_i u_i u_i^T$$</p>
-<p>Determining the market correlation is straight forward as it is simply the outer-product of the eigenvector corresponding to the largest eigenvalue. Determining \(N_g\) is more difficult, but we can do it graphically. It has been shown that the bulk of the eigenvalues of the stock matrix are in remarkable agreements with the universal properties of the random correlation matrix. Therefore, we simply choose the eigenvalues that are outside of the bulk.</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>plt<span style=color:#f92672>.</span>figure(figsize <span style=color:#f92672>=</span>(<span style=color:#ae81ff>10</span>,<span style=color:#ae81ff>10</span>))
-
-plt<span style=color:#f92672>.</span>subplot(<span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>1</span>)
-
-plt<span style=color:#f92672>.</span>hist(w, bins <span style=color:#f92672>=</span> <span style=color:#ae81ff>400</span>)
-
-plt<span style=color:#f92672>.</span>xlim([<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>50</span>])
-
-ticks <span style=color:#f92672>=</span> plt<span style=color:#f92672>.</span>xticks(range(<span style=color:#ae81ff>51</span>))
-</code></pre></div><p><img src=CorrelationNetwork_12_0.png alt=png></p>
-<p>From this figure we can see that eigenvalues above \(\sim\) 3 are not inside of the &ldquo;bulk&rdquo;. So we just calculate the number of eigenvalues above 3.</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>sum(w <span style=color:#f92672>&gt;</span><span style=color:#ae81ff>3</span>)
-</code></pre></div><pre><code>13
-</code></pre>
-<p>Taking the largest 13 eigenvalues is ok (including the first eigenvector)</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>N_g <span style=color:#f92672>=</span> <span style=color:#ae81ff>12</span>
-
-
-
-C_m <span style=color:#f92672>=</span> w[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>*</span>np<span style=color:#f92672>.</span>outer(V[:,<span style=color:#ae81ff>0</span>],V[:,<span style=color:#ae81ff>0</span>])
-
-C_g <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>dot(V[:,<span style=color:#ae81ff>1</span>:(N_g<span style=color:#f92672>+</span><span style=color:#ae81ff>1</span>)], np<span style=color:#f92672>.</span>diag(w[<span style=color:#ae81ff>1</span>:(N_g<span style=color:#f92672>+</span><span style=color:#ae81ff>1</span>)]))<span style=color:#f92672>.</span>dot(V[:,<span style=color:#ae81ff>1</span>:(N_g<span style=color:#f92672>+</span><span style=color:#ae81ff>1</span>)]<span style=color:#f92672>.</span>T)
-
-C_g[C_g<span style=color:#f92672>&lt;</span><span style=color:#ae81ff>0</span>] <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>
-</code></pre></div><p>One problem with this approach is that \(C_g\) is not a real correlation matrix (as the diagonals are not one anymore). Therefore, we should project the data onto the eigenvector corresponding to the market and the random noise and subtract it from the origin data set. After doing so once should then construct the group correlation matrix from the new data. However, I will skip that step for now. We want to use the group correlation matrix to find the groups of stocks. The stocks in each block should be correlated but stocks between different groups should not be correlated. That is we have intra-correlation but not inter-correlation. This means that the group correlation matrix should be block diagonalizable. As an example, a group correlation matrix with 3 groups should having the following pattern:</p>
-<p>$$C_g = \begin{bmatrix} G_1 & \boldsymbol{0 } & \boldsymbol{0} \newline \boldsymbol{0} & G_2 & \boldsymbol{0} \newline \boldsymbol{0} & \boldsymbol{0} & G_3 \end{bmatrix}$$</p>
-<p>Our current group correlation matrix, however, looks like this:</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>sns<span style=color:#f92672>.</span>heatmap(C_g, cmap <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;viridis&#39;</span>, vmin <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>, vmax <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.2</span> )
-</code></pre></div><p><img src=CorrelationNetwork_18_1.png alt=png></p>
-<p>So to identify the groups, we need to shuffle the rows and columns until we have a block diagonal matrix. Unfortunately, that procedure is a combinatorial hard problem and with 500 stocks we have to approximate the best permutation. The authors suggested to consider an energy attraction function that should be minimized.</p>
-<p>$$ E = \sum_{i &lt; j} C_{ij}^g |l_i - l_j|\boldsymbol{1} (C_{ij}^g -c_c >0)$$</p>
-<p>where \(l_i\) is the position of stock \(i\) in the new index sequence. We can choose whatever cutoff \(c_c\) we want. I will simply use \(c_c = 0\). One optimization method that can be used to approximate combinatorial hard problem is simulated annealing. The following code creates a class that can perform our optimization task.</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#66d9ef>class</span> <span style=color:#a6e22e>SA</span>:
-
-
-
-
-
-    <span style=color:#66d9ef>def</span> __init__(self, C, step_max, temp_min, temp_start, alpha) <span style=color:#f92672>-&gt;</span> <span style=color:#66d9ef>None</span>:
-
-        self<span style=color:#f92672>.</span>C <span style=color:#f92672>=</span> C<span style=color:#f92672>.</span>copy()
-
-        self<span style=color:#f92672>.</span>step_max <span style=color:#f92672>=</span> step_max
-
-        self<span style=color:#f92672>.</span>temp_min <span style=color:#f92672>=</span> temp_min
-
-        self<span style=color:#f92672>.</span>temp_start <span style=color:#f92672>=</span> temp_start
-
-        self<span style=color:#f92672>.</span>alpha <span style=color:#f92672>=</span> alpha
-
-
-
-        self<span style=color:#f92672>.</span>index <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array(range(C<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>]))
-
-
-
-        label <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>zeros(C<span style=color:#f92672>.</span>shape)
-
-        label[range(C<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>]), range(C<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>])] <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>
-
-        label <span style=color:#f92672>=</span> label<span style=color:#f92672>.</span>cumsum(axis<span style=color:#f92672>=</span><span style=color:#ae81ff>0</span>)
-
-        label[range(C<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>]), range(C<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>])] <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>
-
-        self<span style=color:#f92672>.</span>label <span style=color:#f92672>=</span> label<span style=color:#f92672>.</span>cumsum(axis<span style=color:#f92672>=</span><span style=color:#ae81ff>0</span>)
-
-
-
-
-
-    <span style=color:#66d9ef>def</span> <span style=color:#a6e22e>energy</span>(self):
-
-        <span style=color:#66d9ef>return</span> np<span style=color:#f92672>.</span>trace(np<span style=color:#f92672>.</span>dot(self<span style=color:#f92672>.</span>C, self<span style=color:#f92672>.</span>label))
-
-
-
-
-
-    <span style=color:#66d9ef>def</span> <span style=color:#a6e22e>move_state</span>(self):
-
-        <span style=color:#e6db74>&#34;&#34;&#34;
-</span><span style=color:#e6db74>
-</span><span style=color:#e6db74>        Randomly swap rows. 
-</span><span style=color:#e6db74>
-</span><span style=color:#e6db74>        &#34;&#34;&#34;</span>
-
-        p0 <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>random<span style=color:#f92672>.</span>randint(<span style=color:#ae81ff>0</span>, len(C)<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>)
-
-        p1 <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>random<span style=color:#f92672>.</span>randint(<span style=color:#ae81ff>0</span>, len(C)<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>)
-
-        self<span style=color:#f92672>.</span>C_last_state <span style=color:#f92672>=</span> self<span style=color:#f92672>.</span>C<span style=color:#f92672>.</span>copy()
-
-
-
-        self<span style=color:#f92672>.</span>index[p0], self<span style=color:#f92672>.</span>index[p1] <span style=color:#f92672>=</span> self<span style=color:#f92672>.</span>index[p1], self<span style=color:#f92672>.</span>index[p0] 
-
-        
-
-        self<span style=color:#f92672>.</span>C[[p0,p1],:] <span style=color:#f92672>=</span> self<span style=color:#f92672>.</span>C[[p1,p0],:]
-
-        self<span style=color:#f92672>.</span>C[:,[p0,p1]] <span style=color:#f92672>=</span> self<span style=color:#f92672>.</span>C[:,[p1,p0]]
-
-        <span style=color:#75715e>#print(self.C == self.C_last_state)</span>
-
-
-
-    <span style=color:#66d9ef>def</span> <span style=color:#a6e22e>update_temperature</span>(self, step):
-
-        <span style=color:#66d9ef>return</span> self<span style=color:#f92672>.</span>temp_start <span style=color:#f92672>/</span>  (<span style=color:#ae81ff>1</span> <span style=color:#f92672>+</span> self<span style=color:#f92672>.</span>alpha <span style=color:#f92672>*</span> step)
-
-
-
-
-
-    <span style=color:#66d9ef>def</span> <span style=color:#a6e22e>optimize</span>(self):
-
-        <span style=color:#75715e># begin optimizing</span>
-
-        step <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>
-
-        t_step <span style=color:#f92672>=</span> self<span style=color:#f92672>.</span>temp_start
-
-        self<span style=color:#f92672>.</span>best_energy <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>inf
-
-        self<span style=color:#f92672>.</span>best_index <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array(range(C<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>]))
-
-
-
-        self<span style=color:#f92672>.</span>not_keeping <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>
-
-        <span style=color:#66d9ef>while</span> step <span style=color:#f92672>&lt;</span> self<span style=color:#f92672>.</span>step_max <span style=color:#f92672>and</span> t_step <span style=color:#f92672>&gt;=</span> self<span style=color:#f92672>.</span>temp_min:
-
-
-
-            current_energy <span style=color:#f92672>=</span> self<span style=color:#f92672>.</span>energy()
-
-            self<span style=color:#f92672>.</span>move_state()
-
-            new_energy <span style=color:#f92672>=</span> self<span style=color:#f92672>.</span>energy()
-
-
-
-            dE <span style=color:#f92672>=</span> new_energy <span style=color:#f92672>-</span> current_energy
-
-            <span style=color:#75715e># determine if we should not  accept the current neighbor</span>
-
-            <span style=color:#75715e># we always accept if we find a new a better energy state,</span>
-
-
-
-            <span style=color:#66d9ef>if</span> step <span style=color:#f92672>%</span> <span style=color:#ae81ff>1000</span> <span style=color:#f92672>==</span> <span style=color:#ae81ff>0</span>:
-
-                print(<span style=color:#e6db74>f</span><span style=color:#e6db74>&#39;</span><span style=color:#e6db74>{</span>step<span style=color:#e6db74>}</span><span style=color:#e6db74> </span><span style=color:#e6db74>{</span>t_step<span style=color:#e6db74>}</span><span style=color:#e6db74> </span><span style=color:#e6db74>{</span><span style=color:#f92672>-</span>dE <span style=color:#f92672>/</span> t_step<span style=color:#e6db74>}</span><span style=color:#e6db74>&#39;</span>)
-
-            <span style=color:#66d9ef>if</span> np<span style=color:#f92672>.</span>log(np<span style=color:#f92672>.</span>random<span style=color:#f92672>.</span>uniform()) <span style=color:#f92672>&gt;</span> <span style=color:#f92672>-</span>dE <span style=color:#f92672>/</span> t_step:
-
-                self<span style=color:#f92672>.</span>not_keeping <span style=color:#f92672>+=</span><span style=color:#ae81ff>1</span>
-
-                self<span style=color:#f92672>.</span>C <span style=color:#f92672>=</span> self<span style=color:#f92672>.</span>C_last_state<span style=color:#f92672>.</span>copy()
-
-
-
-            <span style=color:#75715e># keep track of best index</span>
-
-            <span style=color:#66d9ef>if</span> new_energy <span style=color:#f92672>&lt;</span> self<span style=color:#f92672>.</span>best_energy:
-
-                self<span style=color:#f92672>.</span>best_energy <span style=color:#f92672>=</span> new_energy
-
-                self<span style=color:#f92672>.</span>best_index <span style=color:#f92672>=</span> self<span style=color:#f92672>.</span>index<span style=color:#f92672>.</span>copy()
-
-
-
-                
-
-            
-
-            <span style=color:#75715e># update some stuff</span>
-
-            t_step <span style=color:#f92672>=</span> self<span style=color:#f92672>.</span>update_temperature(step)
-
-            step <span style=color:#f92672>+=</span> <span style=color:#ae81ff>1</span>
-
-
-</code></pre></div><p>The following code runs the optimization (which might take some time),</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>sa <span style=color:#f92672>=</span> SA(C <span style=color:#f92672>=</span> C_g<span style=color:#f92672>.</span>copy(), step_max <span style=color:#f92672>=</span> <span style=color:#ae81ff>500000</span>, temp_min<span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>, temp_start<span style=color:#f92672>=</span> <span style=color:#ae81ff>100000</span>,alpha<span style=color:#f92672>=</span><span style=color:#ae81ff>0.1</span> )
-sa<span style=color:#f92672>.</span>optimize()
-
-sns<span style=color:#f92672>.</span>heatmap(sa<span style=color:#f92672>.</span>C, cmap <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;viridis&#39;</span>, vmin <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>, vmax <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.2</span>)
-</code></pre></div><p><img src=CorrelationNetwork_23_1.png alt=png></p>
-<p>We can certainly see a block diagonal structure but there is a lot of noise. Trying different hyperparameters is give similar solution. The grouping is not as clear as in the original paper but it should be noted that the data is not the same, we are using data from 2011 and onwards while the authors use data from 1983 −2003.</p>
-<h2 id=ordering-by-sector>Ordering by Sector</h2>
-<p>It is interesting to see what happens if we order by the sector.</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>C_df <span style=color:#f92672>=</span> pd<span style=color:#f92672>.</span>DataFrame(C)
-
-C_df <span style=color:#f92672>=</span> pd<span style=color:#f92672>.</span>merge(C_df, asset_profiles, left_index<span style=color:#f92672>=</span><span style=color:#66d9ef>True</span>, right_on<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;ticker&#39;</span>, how <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;left&#39;</span>)
-
-C_df[<span style=color:#e6db74>&#39;my_index&#39;</span>] <span style=color:#f92672>=</span> range(C_df<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>])
-
-C_df <span style=color:#f92672>=</span> C_df<span style=color:#f92672>.</span>sort_values(by <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;sector&#39;</span>)
-
-
-
-p <span style=color:#f92672>=</span> list(C_df[<span style=color:#e6db74>&#39;my_index&#39;</span>])
-
-C_g_sector <span style=color:#f92672>=</span> C_g<span style=color:#f92672>.</span>copy()
-
-N <span style=color:#f92672>=</span> C_g_sector<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>]
-
-<span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(N):
-
-    C_g_sector[:,i] <span style=color:#f92672>=</span> C_g_sector[p,i]
-
-<span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(N):
-
-    C_g_sector[i,:] <span style=color:#f92672>=</span> C_g_sector[i,p]
-
-sns<span style=color:#f92672>.</span>heatmap(C_g_sector, cmap <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;viridis&#39;</span>, vmin <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>, vmax <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.2</span>)
-</code></pre></div><p><img src=CorrelationNetwork_27_1.png alt=png></p>
-<p>We can clearly see some blocks, but the matrix is not really block diagonal. Also, if we compare the energy of the simulated annealing solution and the sector ordering we see that the simulated annealing solution gives us lower energy.</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>label <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>zeros(C<span style=color:#f92672>.</span>shape)
-
-label[range(C<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>]), range(C<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>])] <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>
-
-label <span style=color:#f92672>=</span> label<span style=color:#f92672>.</span>cumsum(axis<span style=color:#f92672>=</span><span style=color:#ae81ff>0</span>)
-
-label[range(C<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>]), range(C<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>])] <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>
-
-label <span style=color:#f92672>=</span> label<span style=color:#f92672>.</span>cumsum(axis<span style=color:#f92672>=</span><span style=color:#ae81ff>0</span>)
-
-
-
-print(<span style=color:#e6db74>f</span><span style=color:#e6db74>&#39;Simulated annealing energy: </span><span style=color:#e6db74>{</span>np<span style=color:#f92672>.</span>trace(np<span style=color:#f92672>.</span>dot(sa<span style=color:#f92672>.</span>C, label))<span style=color:#e6db74>}</span><span style=color:#e6db74>&#39;</span>)
-
-print(<span style=color:#e6db74>f</span><span style=color:#e6db74>&#39;Sector energy: </span><span style=color:#e6db74>{</span>np<span style=color:#f92672>.</span>trace(np<span style=color:#f92672>.</span>dot(C_g_sector, label))<span style=color:#e6db74>}</span><span style=color:#e6db74>&#39;</span>)
-</code></pre></div><pre><code>Simulated annealing energy: 194934.5626893667
+</h3></blockquote><div class="layui-card-body markdown-body single-content">
+<h1 id=introduction>Introduction</h1><p>In this notebook I will be trying to replicate the work of <a href=https://journals.aps.org/pre/abstract/10.1103/PhysRevE.72.046133>Dong-Hee Kim and Hawoong Jeong</a>. The goal is to look at the eigen decomposition of the return correlation matrix. The decomposition allows us to separate the correlation into three parts. Namely, the marketwide effect, group correlation matrix and a random noise part. By filtering out the marketwide effect and the random noise, we can look at nontrivial correlation of stock groups. That is, we have will be able to identify groups of stocks that are highly correlated after taking the market correlation out of the equation. This is important as we know that the market conditions drive the stock returns and thus by filtering out the marketwide effect we have a better understanding of how diversified our portfolio is. In order to identify the groups we will use an optimization method called simulated annealing.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#f92672>import</span> numpy <span style=color:#66d9ef>as</span> np
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> matplotlib.pyplot <span style=color:#66d9ef>as</span> plt
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> seaborn <span style=color:#66d9ef>as</span> sns
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> pandas <span style=color:#66d9ef>as</span> pd
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> scipy.linalg <span style=color:#f92672>import</span> eigh
+</span></span></code></pre></div><h1 id=calculating-the-correlation-matrix>Calculating the Correlation matrix</h1><p>We start by calculating the correlation matrix. We will only consider data from 2011-01-01 until 2021-08-15</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>asset_profiles <span style=color:#f92672>=</span> pd<span style=color:#f92672>.</span>read_excel(<span style=color:#e6db74>&#34;data/YAHOO_PRICE_ESG.xlsx&#34;</span>, sheet_name<span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;asset_profiles&#39;</span>) 
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>price_data <span style=color:#f92672>=</span> pd<span style=color:#f92672>.</span>read_csv(<span style=color:#e6db74>&#34;data/YAHOO_PRICE.csv&#34;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>price_data[<span style=color:#e6db74>&#39;timestamp&#39;</span>] <span style=color:#f92672>=</span> pd<span style=color:#f92672>.</span>to_datetime(price_data[<span style=color:#e6db74>&#39;timestamp&#39;</span>])
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>price_filtered <span style=color:#f92672>=</span> price_data<span style=color:#f92672>.</span>loc[price_data[<span style=color:#e6db74>&#39;timestamp&#39;</span>] <span style=color:#f92672>&gt;</span> <span style=color:#e6db74>&#39;2011-01-01 04:00:00&#39;</span>, price_data<span style=color:#f92672>.</span>columns]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>price_filtered[<span style=color:#e6db74>&#39;date&#39;</span>] <span style=color:#f92672>=</span> price_filtered[<span style=color:#e6db74>&#39;timestamp&#39;</span>]<span style=color:#f92672>.</span>dt<span style=color:#f92672>.</span>date
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>price_filtered[<span style=color:#e6db74>&#39;return&#39;</span>] <span style=color:#f92672>=</span> price_filtered<span style=color:#f92672>.</span>sort_values(<span style=color:#e6db74>&#39;date&#39;</span>)<span style=color:#f92672>.</span>groupby([<span style=color:#e6db74>&#39;ticker&#39;</span>])<span style=color:#f92672>.</span>adjclose<span style=color:#f92672>.</span>pct_change()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>price_pivot <span style=color:#f92672>=</span> price_filtered[[<span style=color:#e6db74>&#39;ticker&#39;</span>, <span style=color:#e6db74>&#39;return&#39;</span>, <span style=color:#e6db74>&#39;date&#39;</span>]]<span style=color:#f92672>.</span>copy()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>price_pivot[<span style=color:#e6db74>&#39;return&#39;</span>] <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>log(<span style=color:#ae81ff>1</span> <span style=color:#f92672>+</span> price_pivot[<span style=color:#e6db74>&#39;return&#39;</span>])
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>price_pivot <span style=color:#f92672>=</span> price_pivot<span style=color:#f92672>.</span>dropna()  <span style=color:#75715e># Drop rows which contain missing values</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>price_pivot <span style=color:#f92672>=</span> pd<span style=color:#f92672>.</span>pivot_table(price_pivot, values <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;return&#39;</span>, index <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;date&#39;</span>, columns<span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;ticker&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>C <span style=color:#f92672>=</span> price_pivot<span style=color:#f92672>.</span>corr()
+</span></span></code></pre></div><h1 id=localization-of-eigenvectors>Localization of Eigenvectors</h1><p>Let&rsquo;s examine the eigenvectors. Only a few components contribute to each eigenvector, and the stocks corresponding to those dominant components of the eigenvector are usually found to belong to a common industry. We can test this by doing a simple plot.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#75715e># Eigen decomposition</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>w, V <span style=color:#f92672>=</span> eigh(C)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>w <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>flipud(w)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>V <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>fliplr(V)
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>V_df <span style=color:#f92672>=</span> pd<span style=color:#f92672>.</span>DataFrame(V)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>V_df[<span style=color:#e6db74>&#39;ticker&#39;</span>] <span style=color:#f92672>=</span> C<span style=color:#f92672>.</span>index
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>V_df <span style=color:#f92672>=</span> pd<span style=color:#f92672>.</span>merge(V_df, asset_profiles, on <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;ticker&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>V_df <span style=color:#f92672>=</span> V_df<span style=color:#f92672>.</span>sort_values(by <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;sector&#39;</span> )
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>V_df[<span style=color:#e6db74>&#39;change&#39;</span>] <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>V_df[<span style=color:#e6db74>&#39;index&#39;</span>] <span style=color:#f92672>=</span> range(V_df<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>])
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>last <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;&#39;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>tick <span style=color:#f92672>=</span> []
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>tick_sector <span style=color:#f92672>=</span> []
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(V_df<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>):
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> V_df[<span style=color:#e6db74>&#39;sector&#39;</span>]<span style=color:#f92672>.</span>iloc[i] <span style=color:#f92672>!=</span> V_df[<span style=color:#e6db74>&#39;sector&#39;</span>]<span style=color:#f92672>.</span>iloc[i<span style=color:#f92672>+</span><span style=color:#ae81ff>1</span>]:
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        V_df<span style=color:#f92672>.</span>loc[i, <span style=color:#e6db74>&#39;change&#39;</span>] <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        tick<span style=color:#f92672>.</span>append(i)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        tick_sector<span style=color:#f92672>.</span>append(V_df[<span style=color:#e6db74>&#39;sector&#39;</span>]<span style=color:#f92672>.</span>iloc[i])
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> i <span style=color:#f92672>==</span> V_df<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>-</span><span style=color:#ae81ff>2</span>:
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        V_df<span style=color:#f92672>.</span>loc[i, <span style=color:#e6db74>&#39;change&#39;</span>] <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        tick<span style=color:#f92672>.</span>append(i)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        tick_sector<span style=color:#f92672>.</span>append(V_df[<span style=color:#e6db74>&#39;sector&#39;</span>]<span style=color:#f92672>.</span>iloc[i])
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>nr_eigen <span style=color:#f92672>=</span> <span style=color:#ae81ff>8</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>fig, ax <span style=color:#f92672>=</span> plt<span style=color:#f92672>.</span>subplots(nr_eigen, <span style=color:#ae81ff>1</span>, figsize<span style=color:#f92672>=</span>(<span style=color:#ae81ff>10</span>, <span style=color:#ae81ff>15</span>))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>title(<span style=color:#e6db74>&#39;The eigenvalues squared.&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(nr_eigen):
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    V_plot <span style=color:#f92672>=</span> V_df<span style=color:#f92672>.</span>iloc[:,i]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>   
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    ax[i]<span style=color:#f92672>.</span>plot(range(len(V_plot)), np<span style=color:#f92672>.</span>abs(V_plot) <span style=color:#f92672>**</span> <span style=color:#ae81ff>2</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span> j <span style=color:#f92672>in</span> tick:
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        ax[i]<span style=color:#f92672>.</span>axvline(j, color <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;black&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    ax[i]<span style=color:#f92672>.</span>set_title(<span style=color:#e6db74>f</span><span style=color:#e6db74>&#39;eigenvalue nr </span><span style=color:#e6db74>{</span>i<span style=color:#e6db74>}</span><span style=color:#e6db74>&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> i <span style=color:#f92672>==</span> nr_eigen <span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>:
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        ax[i]<span style=color:#f92672>.</span>set_xticks(tick)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        ax[i]<span style=color:#f92672>.</span>set_xticklabels(tick_sector, rotation <span style=color:#f92672>=</span> <span style=color:#ae81ff>90</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>fig<span style=color:#f92672>.</span>subplots_adjust(hspace<span style=color:#f92672>=</span><span style=color:#ae81ff>.5</span>)
+</span></span></code></pre></div><p><img src=CorrelationNetwork_8_0.png alt=png></p><p>The figure shows the eigenvalues entries squared. We see that the first eigenvector, which corresponds to the marketwide effect, has not real dominant values. The other eigenvector, however, seem to have dominant eigenvalue entries which seem relate to sectors. This is especially true for eigenvector nr. 4 where we the entries correspond to the energy sector.</p><h1 id=group-identification>Group Identification</h1><p>We are interested in decomposing the correlation matrix into the market correlation \(C^m\), group correlation \(C^g\) and the random noise \(C^n\). The idea behind group identification is pretty simple. We simply assume that the correlation matrix can be written as.</p><p>$$C = C^m + C^g + C^n = \lambda_0u_0u_0^T + \sum_{i=1}^{N_g} \lambda_i u_i u_i^T + \sum_{i=N_g +1}^{N} \lambda_i u_i u_i^T$$</p><p>Determining the market correlation is straight forward as it is simply the outer-product of the eigenvector corresponding to the largest eigenvalue. Determining \(N_g\) is more difficult, but we can do it graphically. It has been shown that the bulk of the eigenvalues of the stock matrix are in remarkable agreements with the universal properties of the random correlation matrix. Therefore, we simply choose the eigenvalues that are outside of the bulk.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>plt<span style=color:#f92672>.</span>figure(figsize <span style=color:#f92672>=</span>(<span style=color:#ae81ff>10</span>,<span style=color:#ae81ff>10</span>))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>subplot(<span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>hist(w, bins <span style=color:#f92672>=</span> <span style=color:#ae81ff>400</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>xlim([<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>50</span>])
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>ticks <span style=color:#f92672>=</span> plt<span style=color:#f92672>.</span>xticks(range(<span style=color:#ae81ff>51</span>))
+</span></span></code></pre></div><p><img src=CorrelationNetwork_12_0.png alt=png></p><p>From this figure we can see that eigenvalues above \(\sim\) 3 are not inside of the &ldquo;bulk&rdquo;. So we just calculate the number of eigenvalues above 3.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>sum(w <span style=color:#f92672>&gt;</span><span style=color:#ae81ff>3</span>)
+</span></span></code></pre></div><pre><code>13
+</code></pre><p>Taking the largest 13 eigenvalues is ok (including the first eigenvector)</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>N_g <span style=color:#f92672>=</span> <span style=color:#ae81ff>12</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>C_m <span style=color:#f92672>=</span> w[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>*</span>np<span style=color:#f92672>.</span>outer(V[:,<span style=color:#ae81ff>0</span>],V[:,<span style=color:#ae81ff>0</span>])
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>C_g <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>dot(V[:,<span style=color:#ae81ff>1</span>:(N_g<span style=color:#f92672>+</span><span style=color:#ae81ff>1</span>)], np<span style=color:#f92672>.</span>diag(w[<span style=color:#ae81ff>1</span>:(N_g<span style=color:#f92672>+</span><span style=color:#ae81ff>1</span>)]))<span style=color:#f92672>.</span>dot(V[:,<span style=color:#ae81ff>1</span>:(N_g<span style=color:#f92672>+</span><span style=color:#ae81ff>1</span>)]<span style=color:#f92672>.</span>T)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>C_g[C_g<span style=color:#f92672>&lt;</span><span style=color:#ae81ff>0</span>] <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>
+</span></span></code></pre></div><p>One problem with this approach is that \(C_g\) is not a real correlation matrix (as the diagonals are not one anymore). Therefore, we should project the data onto the eigenvector corresponding to the market and the random noise and subtract it from the origin data set. After doing so once should then construct the group correlation matrix from the new data. However, I will skip that step for now. We want to use the group correlation matrix to find the groups of stocks. The stocks in each block should be correlated but stocks between different groups should not be correlated. That is we have intra-correlation but not inter-correlation. This means that the group correlation matrix should be block diagonalizable. As an example, a group correlation matrix with 3 groups should having the following pattern:</p><p>$$C_g = \begin{bmatrix} G_1 & \boldsymbol{0 } & \boldsymbol{0} \newline \boldsymbol{0} & G_2 & \boldsymbol{0} \newline \boldsymbol{0} & \boldsymbol{0} & G_3 \end{bmatrix}$$</p><p>Our current group correlation matrix, however, looks like this:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>sns<span style=color:#f92672>.</span>heatmap(C_g, cmap <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;viridis&#39;</span>, vmin <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>, vmax <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.2</span> )
+</span></span></code></pre></div><p><img src=CorrelationNetwork_18_1.png alt=png></p><p>So to identify the groups, we need to shuffle the rows and columns until we have a block diagonal matrix. Unfortunately, that procedure is a combinatorial hard problem and with 500 stocks we have to approximate the best permutation. The authors suggested to consider an energy attraction function that should be minimized.</p><p>$$ E = \sum_{i &lt; j} C_{ij}^g |l_i - l_j|\boldsymbol{1} (C_{ij}^g -c_c >0)$$</p><p>where \(l_i\) is the position of stock \(i\) in the new index sequence. We can choose whatever cutoff \(c_c\) we want. I will simply use \(c_c = 0\). One optimization method that can be used to approximate combinatorial hard problem is simulated annealing. The following code creates a class that can perform our optimization task.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#66d9ef>class</span> <span style=color:#a6e22e>SA</span>:
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>def</span> __init__(self, C, step_max, temp_min, temp_start, alpha) <span style=color:#f92672>-&gt;</span> <span style=color:#66d9ef>None</span>:
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>C <span style=color:#f92672>=</span> C<span style=color:#f92672>.</span>copy()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>step_max <span style=color:#f92672>=</span> step_max
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>temp_min <span style=color:#f92672>=</span> temp_min
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>temp_start <span style=color:#f92672>=</span> temp_start
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>alpha <span style=color:#f92672>=</span> alpha
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>index <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array(range(C<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>]))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        label <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>zeros(C<span style=color:#f92672>.</span>shape)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        label[range(C<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>]), range(C<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>])] <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        label <span style=color:#f92672>=</span> label<span style=color:#f92672>.</span>cumsum(axis<span style=color:#f92672>=</span><span style=color:#ae81ff>0</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        label[range(C<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>]), range(C<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>])] <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>label <span style=color:#f92672>=</span> label<span style=color:#f92672>.</span>cumsum(axis<span style=color:#f92672>=</span><span style=color:#ae81ff>0</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>def</span> <span style=color:#a6e22e>energy</span>(self):
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> np<span style=color:#f92672>.</span>trace(np<span style=color:#f92672>.</span>dot(self<span style=color:#f92672>.</span>C, self<span style=color:#f92672>.</span>label))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>def</span> <span style=color:#a6e22e>move_state</span>(self):
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#e6db74>&#34;&#34;&#34;
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>        Randomly swap rows. 
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>        &#34;&#34;&#34;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        p0 <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>random<span style=color:#f92672>.</span>randint(<span style=color:#ae81ff>0</span>, len(C)<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        p1 <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>random<span style=color:#f92672>.</span>randint(<span style=color:#ae81ff>0</span>, len(C)<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>C_last_state <span style=color:#f92672>=</span> self<span style=color:#f92672>.</span>C<span style=color:#f92672>.</span>copy()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>index[p0], self<span style=color:#f92672>.</span>index[p1] <span style=color:#f92672>=</span> self<span style=color:#f92672>.</span>index[p1], self<span style=color:#f92672>.</span>index[p0] 
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>C[[p0,p1],:] <span style=color:#f92672>=</span> self<span style=color:#f92672>.</span>C[[p1,p0],:]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>C[:,[p0,p1]] <span style=color:#f92672>=</span> self<span style=color:#f92672>.</span>C[:,[p1,p0]]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#75715e>#print(self.C == self.C_last_state)</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>def</span> <span style=color:#a6e22e>update_temperature</span>(self, step):
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> self<span style=color:#f92672>.</span>temp_start <span style=color:#f92672>/</span>  (<span style=color:#ae81ff>1</span> <span style=color:#f92672>+</span> self<span style=color:#f92672>.</span>alpha <span style=color:#f92672>*</span> step)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>def</span> <span style=color:#a6e22e>optimize</span>(self):
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#75715e># begin optimizing</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        step <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        t_step <span style=color:#f92672>=</span> self<span style=color:#f92672>.</span>temp_start
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>best_energy <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>inf
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>best_index <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array(range(C<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>]))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>not_keeping <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>while</span> step <span style=color:#f92672>&lt;</span> self<span style=color:#f92672>.</span>step_max <span style=color:#f92672>and</span> t_step <span style=color:#f92672>&gt;=</span> self<span style=color:#f92672>.</span>temp_min:
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            current_energy <span style=color:#f92672>=</span> self<span style=color:#f92672>.</span>energy()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            self<span style=color:#f92672>.</span>move_state()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            new_energy <span style=color:#f92672>=</span> self<span style=color:#f92672>.</span>energy()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            dE <span style=color:#f92672>=</span> new_energy <span style=color:#f92672>-</span> current_energy
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            <span style=color:#75715e># determine if we should not  accept the current neighbor</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            <span style=color:#75715e># we always accept if we find a new a better energy state,</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> step <span style=color:#f92672>%</span> <span style=color:#ae81ff>1000</span> <span style=color:#f92672>==</span> <span style=color:#ae81ff>0</span>:
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>                print(<span style=color:#e6db74>f</span><span style=color:#e6db74>&#39;</span><span style=color:#e6db74>{</span>step<span style=color:#e6db74>}</span><span style=color:#e6db74> </span><span style=color:#e6db74>{</span>t_step<span style=color:#e6db74>}</span><span style=color:#e6db74> </span><span style=color:#e6db74>{</span><span style=color:#f92672>-</span>dE <span style=color:#f92672>/</span> t_step<span style=color:#e6db74>}</span><span style=color:#e6db74>&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> np<span style=color:#f92672>.</span>log(np<span style=color:#f92672>.</span>random<span style=color:#f92672>.</span>uniform()) <span style=color:#f92672>&gt;</span> <span style=color:#f92672>-</span>dE <span style=color:#f92672>/</span> t_step:
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>                self<span style=color:#f92672>.</span>not_keeping <span style=color:#f92672>+=</span><span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>                self<span style=color:#f92672>.</span>C <span style=color:#f92672>=</span> self<span style=color:#f92672>.</span>C_last_state<span style=color:#f92672>.</span>copy()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            <span style=color:#75715e># keep track of best index</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> new_energy <span style=color:#f92672>&lt;</span> self<span style=color:#f92672>.</span>best_energy:
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>                self<span style=color:#f92672>.</span>best_energy <span style=color:#f92672>=</span> new_energy
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>                self<span style=color:#f92672>.</span>best_index <span style=color:#f92672>=</span> self<span style=color:#f92672>.</span>index<span style=color:#f92672>.</span>copy()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>                
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            <span style=color:#75715e># update some stuff</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            t_step <span style=color:#f92672>=</span> self<span style=color:#f92672>.</span>update_temperature(step)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            step <span style=color:#f92672>+=</span> <span style=color:#ae81ff>1</span>
+</span></span></code></pre></div><p>The following code runs the optimization (which might take some time),</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>sa <span style=color:#f92672>=</span> SA(C <span style=color:#f92672>=</span> C_g<span style=color:#f92672>.</span>copy(), step_max <span style=color:#f92672>=</span> <span style=color:#ae81ff>500000</span>, temp_min<span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>, temp_start<span style=color:#f92672>=</span> <span style=color:#ae81ff>100000</span>,alpha<span style=color:#f92672>=</span><span style=color:#ae81ff>0.1</span> )
+</span></span><span style=display:flex><span>sa<span style=color:#f92672>.</span>optimize()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>sns<span style=color:#f92672>.</span>heatmap(sa<span style=color:#f92672>.</span>C, cmap <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;viridis&#39;</span>, vmin <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>, vmax <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.2</span>)
+</span></span></code></pre></div><p><img src=CorrelationNetwork_23_1.png alt=png></p><p>We can certainly see a block diagonal structure but there is a lot of noise. Trying different hyperparameters is give similar solution. The grouping is not as clear as in the original paper but it should be noted that the data is not the same, we are using data from 2011 and onwards while the authors use data from 1983 −2003.</p><h2 id=ordering-by-sector>Ordering by Sector</h2><p>It is interesting to see what happens if we order by the sector.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>C_df <span style=color:#f92672>=</span> pd<span style=color:#f92672>.</span>DataFrame(C)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>C_df <span style=color:#f92672>=</span> pd<span style=color:#f92672>.</span>merge(C_df, asset_profiles, left_index<span style=color:#f92672>=</span><span style=color:#66d9ef>True</span>, right_on<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;ticker&#39;</span>, how <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;left&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>C_df[<span style=color:#e6db74>&#39;my_index&#39;</span>] <span style=color:#f92672>=</span> range(C_df<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>])
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>C_df <span style=color:#f92672>=</span> C_df<span style=color:#f92672>.</span>sort_values(by <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;sector&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>p <span style=color:#f92672>=</span> list(C_df[<span style=color:#e6db74>&#39;my_index&#39;</span>])
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>C_g_sector <span style=color:#f92672>=</span> C_g<span style=color:#f92672>.</span>copy()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>N <span style=color:#f92672>=</span> C_g_sector<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(N):
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    C_g_sector[:,i] <span style=color:#f92672>=</span> C_g_sector[p,i]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(N):
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    C_g_sector[i,:] <span style=color:#f92672>=</span> C_g_sector[i,p]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>sns<span style=color:#f92672>.</span>heatmap(C_g_sector, cmap <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;viridis&#39;</span>, vmin <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>, vmax <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.2</span>)
+</span></span></code></pre></div><p><img src=CorrelationNetwork_27_1.png alt=png></p><p>We can clearly see some blocks, but the matrix is not really block diagonal. Also, if we compare the energy of the simulated annealing solution and the sector ordering we see that the simulated annealing solution gives us lower energy.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>label <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>zeros(C<span style=color:#f92672>.</span>shape)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>label[range(C<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>]), range(C<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>])] <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>label <span style=color:#f92672>=</span> label<span style=color:#f92672>.</span>cumsum(axis<span style=color:#f92672>=</span><span style=color:#ae81ff>0</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>label[range(C<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>]), range(C<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>])] <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>label <span style=color:#f92672>=</span> label<span style=color:#f92672>.</span>cumsum(axis<span style=color:#f92672>=</span><span style=color:#ae81ff>0</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>print(<span style=color:#e6db74>f</span><span style=color:#e6db74>&#39;Simulated annealing energy: </span><span style=color:#e6db74>{</span>np<span style=color:#f92672>.</span>trace(np<span style=color:#f92672>.</span>dot(sa<span style=color:#f92672>.</span>C, label))<span style=color:#e6db74>}</span><span style=color:#e6db74>&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>print(<span style=color:#e6db74>f</span><span style=color:#e6db74>&#39;Sector energy: </span><span style=color:#e6db74>{</span>np<span style=color:#f92672>.</span>trace(np<span style=color:#f92672>.</span>dot(C_g_sector, label))<span style=color:#e6db74>}</span><span style=color:#e6db74>&#39;</span>)
+</span></span></code></pre></div><pre><code>Simulated annealing energy: 194934.5626893667
 Sector energy: 449499.61127649556
-</code></pre>
-</div>
-</div>
-</div>
-<div class="layui-col-md4 layui-col-sm12 layui-col-xs12">
+</code></pre></div></div></div><div class="layui-col-md4 layui-col-sm12 layui-col-xs12">
 <div class="layui-card single-card">
-<h2 class=single-title>Recent Posts</h2>
-<div style=margin-left:10px>
+<h2 class=single-title>Recent Posts</h2><div style=margin-left:10px>
+<blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
+<a href=/post/glm/>
+<h3>Generalized Lienar Models</h3></a>
+<h3 style=margin-top:10px;margin-bottom:10px>
+<i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<span>2022-03-02</span>
+<i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
+<a href=/tags/model/>
+<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Model</span>
+</a>
+</h3></blockquote></div><div style=margin-left:10px>
 <blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
 <a href=/post/hmm/>
-<h3>Hidden Markov Models</h3>
-</a>
+<h3>Hidden Markov Models</h3></a>
 <h3 style=margin-top:10px;margin-bottom:10px>
 <i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
 <span>2022-02-15</span>
@@ -464,14 +416,10 @@ Sector energy: 449499.61127649556
 <a href=/tags/classification/>
 <span class="layui-badge layui-bg-orange" style=vertical-align:2px>Classification</span>
 </a>
-</h3>
-</blockquote>
-</div>
-<div style=margin-left:10px>
+</h3></blockquote></div><div style=margin-left:10px>
 <blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
 <a href=/post/extremes/>
-<h3>Quntitative Risk Analysis</h3>
-</a>
+<h3>Quntitative Risk Analysis</h3></a>
 <h3 style=margin-top:10px;margin-bottom:10px>
 <i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
 <span>2021-11-17</span>
@@ -482,14 +430,10 @@ Sector energy: 449499.61127649556
 <a href=/tags/extremes/>
 <span class="layui-badge layui-bg-orange" style=vertical-align:2px>Extremes</span>
 </a>
-</h3>
-</blockquote>
-</div>
-<div style=margin-left:10px>
+</h3></blockquote></div><div style=margin-left:10px>
 <blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
 <a href=/post/deepkernel/>
-<h3>Deep Graph Kernels</h3>
-</a>
+<h3>Deep Graph Kernels</h3></a>
 <h3 style=margin-top:10px;margin-bottom:10px>
 <i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
 <span>2021-11-16</span>
@@ -503,14 +447,10 @@ Sector energy: 449499.61127649556
 <a href=/tags/kernel/>
 <span class="layui-badge layui-bg-orange" style=vertical-align:2px>Kernel</span>
 </a>
-</h3>
-</blockquote>
-</div>
-<div style=margin-left:10px>
+</h3></blockquote></div><div style=margin-left:10px>
 <blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
 <a href=/post/correlationnetwork/>
-<h3>Group Identification in Stock Markets</h3>
-</a>
+<h3>Group Identification in Stock Markets</h3></a>
 <h3 style=margin-top:10px;margin-bottom:10px>
 <i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
 <span>2021-09-16</span>
@@ -518,36 +458,7 @@ Sector energy: 449499.61127649556
 <a href=/tags/risk/>
 <span class="layui-badge layui-bg-orange" style=vertical-align:2px>Risk</span>
 </a>
-</h3>
-</blockquote>
-</div>
-<div style=margin-left:10px>
-<blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
-<a href=/post/data_visualization/>
-<h3>Data Visualization and Data Reduction</h3>
-</a>
-<h3 style=margin-top:10px;margin-bottom:10px>
-<i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
-<span>2021-08-30</span>
-<i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
-<a href=/tags/visualization/>
-<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Visualization</span>
-</a>
-<a href=/tags/data-analysis/>
-<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Data Analysis</span>
-</a>
-</h3>
-</blockquote>
-</div>
-<br>
-</div>
-</div>
-</div>
-</div>
-</div><footer>
+</h3></blockquote></div><br>
+</div></div></div></div></div><footer>
 <div class=layui-container>
-<p class=copyright>&copy; All rights reserved. Powered by <a href=https://gohugo.io style=color:#fff>Hugo</a>, <a href=https://github.com/ertuil/erblog style=color:#fff>Erblog</a> and <a href=https://github.com/vlunot/nb2hugo style=color:#fff>nb2hugo</a>.</p>
-</div>
-</footer>
-</body>
-</html>
+<p class=copyright>&copy; All rights reserved. Powered by <a href=https://gohugo.io style=color:#fff>Hugo</a>, <a href=https://github.com/ertuil/erblog style=color:#fff>Erblog</a> and <a href=https://github.com/vlunot/nb2hugo style=color:#fff>nb2hugo</a>.</p></div></footer></body></html>

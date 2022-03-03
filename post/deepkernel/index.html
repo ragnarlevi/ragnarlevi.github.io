@@ -2,8 +2,7 @@
 <head>
 <meta charset=utf-8>
 <meta name=viewport content="width=device-width,initial-scale=1">
-<title>Ragnar - Deep Graph Kernels </title>
-<meta content="Graph,Classification,Kernel" name=keywords>
+<title>Ragnar - Deep Graph Kernels </title><meta content="Graph,Classification,Kernel" name=keywords>
 <meta content="Ragnar - Deep Graph Kernels In this notebook I will be constructing a deep graph kernel based on this paper. It utilizes the Weisfeiler-Lehman isomorphism test algorithm and/or the shortest-path  algorithm. The kernel is then used for graph classification. The code is taken from jcatw which again cites Pinar Yanardag as the original author. The code is adjusted to accommodate the networkx library and python 3.
 import networkx as nx import pandas as pd import numpy as np import re from nltk." name=description>
 <meta name=viewport content="width=device-width,initial-scale=1">
@@ -27,27 +26,18 @@ import networkx as nx import pandas as pd import numpy as np import re from nltk
 <link rel=stylesheet async href=/self/css/gallery.css>
 <script src=https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin=anonymous></script>
 <link rel=stylesheet href=https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css integrity="sha256-eZrrJcwDc/3uDhsdt61sL2oOBY362qM3lon1gyExkL0=" crossorigin=anonymous>
-<script async src=https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js integrity="sha256-h2tMEmhemR2IN4wbbdNjj9LaDIjzwk2hralQwfJmBOE=" crossorigin=anonymous></script></head>
-<body>
+<script async src=https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js integrity="sha256-h2tMEmhemR2IN4wbbdNjj9LaDIjzwk2hralQwfJmBOE=" crossorigin=anonymous></script></head><body>
 <header class="layui-header layui-bg-cyan">
 <a class=nav-self-logo href=/>
 Ragnar
 </a>
 <ul class="layui-nav layui-layout-right layui-bg-cyan" lay-filter>
-<li class=layui-nav-item id=nav_big><a href=/post/>Posts</a></li>
-<li class=layui-nav-item id=nav_big><a href=/about/>About</a></li>
-<li class=layui-nav-item id=nav_small>
+<li class=layui-nav-item id=nav_big><a href=/post/>Posts</a></li><li class=layui-nav-item id=nav_big><a href=/about/>About</a></li><li class=layui-nav-item id=nav_small>
 <a href=javascript:;>
 <i class="layui-icon layui-icon-app" style=font-size:24px></i>
 </a>
 <dl class=layui-nav-child>
-<dd><a href=/post/>Posts</a></dd>
-<dd><a href=/about/>About</a></dd>
-</dl>
-</li>
-</ul>
-</header>
-<script>layui.use('element',function(){var a=layui.element})</script>
+<dd><a href=/post/>Posts</a></dd><dd><a href=/about/>About</a></dd></dl></li></ul></header><script>layui.use("element",function(){var e=layui.element})</script>
 <div id=content style=min-height:80%>
 <div class=layui-container style=margin-bottom:10px>
 <div class="layui-row layui-col-space10">
@@ -55,8 +45,7 @@ Ragnar
 <div class="layui-card single-card">
 <br>
 <blockquote class="self-elem-quote self-elem-quote-bg-red markdown-body single-title">
-<h1>Deep Graph Kernels</h1>
-<h3 style=margin-top:10px;margin-bottom:10px>
+<h1>Deep Graph Kernels</h1><h3 style=margin-top:10px;margin-bottom:10px>
 <i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
 <span>2021-11-16</span>
 <i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
@@ -69,127 +58,111 @@ Ragnar
 <a href=/tags/kernel/>
 <span class="layui-badge layui-bg-orange" style=vertical-align:2px>Kernel</span>
 </a>
-</h3>
-</blockquote>
-<div class="layui-card-body markdown-body single-content">
-<h1 id=deep-graph-kernels>Deep Graph Kernels</h1>
-<p>In this notebook I will be constructing a deep graph kernel based on <a href=https://dl.acm.org/doi/10.1145/2783258.2783417>this</a> paper. It utilizes the <a href=https://www.jmlr.org/papers/volume12/shervashidze11a/shervashidze11a.pdf>Weisfeiler-Lehman</a> isomorphism test algorithm and/or the <a href=https://en.wikipedia.org/wiki/Shortest_path_problem>shortest-path </a> algorithm. The kernel is then used for graph classification. The code is taken from <a href=https://github.com/jcatw/scnn/blob/master/scnn/dgk/deep_kernel.py>jcatw</a> which again cites Pinar Yanardag as the original author. The code is adjusted to accommodate the networkx library and python 3.</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#f92672>import</span> networkx <span style=color:#66d9ef>as</span> nx
-<span style=color:#f92672>import</span> pandas <span style=color:#66d9ef>as</span> pd
-<span style=color:#f92672>import</span> numpy <span style=color:#66d9ef>as</span> np
-<span style=color:#f92672>import</span> re
-<span style=color:#f92672>from</span> nltk.stem.porter <span style=color:#f92672>import</span> PorterStemmer
-<span style=color:#f92672>import</span> copy
-</code></pre></div><p>We will use the <a href=https://paperswithcode.com/dataset/mutag>mutag</a> dataset which is a collection of nitroaromatic compounds and the goal is to predict their mutagenicity on Salmonella typhimurium. First we extract the dataset from the Grakel (a python graph kernel package) and transform it into a list of networkx (python network package) graphs.</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#f92672>from</span> grakel.datasets <span style=color:#f92672>import</span> fetch_dataset
-<span style=color:#f92672>from</span> grakel.kernels <span style=color:#f92672>import</span> ShortestPath
-
-<span style=color:#75715e># Loads the MUTAG dataset</span>
-MUTAG <span style=color:#f92672>=</span> fetch_dataset(<span style=color:#e6db74>&#34;MUTAG&#34;</span>, verbose<span style=color:#f92672>=</span><span style=color:#66d9ef>False</span>)
-Graphs, y_target <span style=color:#f92672>=</span> MUTAG<span style=color:#f92672>.</span>data, MUTAG<span style=color:#f92672>.</span>target
-
-GG <span style=color:#f92672>=</span> []
-<span style=color:#66d9ef>for</span> graph <span style=color:#f92672>in</span> Graphs:
-    y <span style=color:#f92672>=</span> nx<span style=color:#f92672>.</span>Graph()
-    y<span style=color:#f92672>.</span>add_edges_from(list(graph[<span style=color:#ae81ff>0</span>]))
-    nx<span style=color:#f92672>.</span>set_node_attributes(y, graph[<span style=color:#ae81ff>1</span>], <span style=color:#e6db74>&#39;label&#39;</span>)
-    y <span style=color:#f92672>=</span>nx<span style=color:#f92672>.</span>convert_node_labels_to_integers(y)
-    GG<span style=color:#f92672>.</span>append(y)
-    
-nx<span style=color:#f92672>.</span>draw_networkx(GG[<span style=color:#ae81ff>0</span>], labels <span style=color:#f92672>=</span> nx<span style=color:#f92672>.</span>get_node_attributes(GG[<span style=color:#ae81ff>0</span>], <span style=color:#e6db74>&#39;label&#39;</span>))
-</code></pre></div><p><img src=DeepKernel_3_0.png alt=png></p>
-<p>We can create a kernel matrix where all entries belonging to a class are similar to each other and dissimilar to anything else using:</p>
-<p>$$K(G,G') = \phi(G)^T M \phi(G')$$</p>
-<p>where $M$ is a $|\mathcal{V}| \times |\mathcal{V}|$ psd matrix that encodes the relationship between sub-structures or their proximity where $|\mathcal{V}|$ is the size of the vocabulary. We will let $\phi$ be a the simple the bag of words vector, meaning it counts how often certain sub-structures appear in the graph and is defined as</p>
-<p>$$\phi: G \mapsto \phi(G) = (tf(t_1, G), \dots, tf(T_N, G)) \in {R}^N$$</p>
-<p>where \(tf(t_1, G)\) is the frequency of sub-structure \(t_1\) in graph \(G\). If \(M_{12}\) is large then sub-structure number 1 and 2 are similar but if it is low then they are dissimilar. Given some sub-structures we want to find a good edit-distance to encode the similarity between two sub-structures. A sub-structure is a very general concept. This means that the user can pre-determine which he or she thinks is important for the classification task at hand. Here I will present sub-structures based on the Weisfeiler-Lehman iteration scheme and the shortest-path.</p>
-<h2 id=wl-similarity>WL similarity</h2>
-<p>The Weisfeiler Lehman iteration is a scheme that test for isomorphisms. If the test is accepted then the graphs <strong>could be</strong> isomorphic and if it is rejected then the graphs are not isomorphic. In words, the algorithm updates the label of the node according to their neighbours. Example, the pairs (a, aabc) and (a, abb) where the first index is the node and the second index are the labels of the neighbours, would receive a different label during this WL iteration but (a, aabc) and (a, aabc) would get the same label. This is much better explained in <a href=https://www.semanticscholar.org/paper/Weisfeiler-Lehman-Graph-Kernels-Shervashidze-Schweitzer/7e1874986cf6433fabf96fff93ef42b60bdc49f8/figure/2>this image</a>.</p>
-<p>The algorithm is the following:</p>
-<p><img src=capture.png alt=png></p>
-<p>The following function builds a corpus using the Weisfeiler Lehman iteration scheme. Multiset labels that belong a given iteration \(h\) can be treated as co-occurred in order to partially preserve a notion of similarity. That is for each graph we create a document where the terms in the document are the multi-set labels of the WL-iteration. Thus if two &ldquo;documents&rdquo; contain the multi-set labels they should have a high similarity.</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>WLSimilarity</span>( X, max_h):
-        labels <span style=color:#f92672>=</span> {}
-        label_lookup <span style=color:#f92672>=</span> {}
-        <span style=color:#75715e># labels are usually strings so we relabel them as integers for sorting purposes</span>
-        label_counter <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span> 
-        num_graphs <span style=color:#f92672>=</span> len(X)
-
-        <span style=color:#75715e># it stands for wl iteration. the initial labelling is indexed at [-1]</span>
-        <span style=color:#75715e># contains the feature map</span>
-        wl_graph_map <span style=color:#f92672>=</span> {it: {gidx: dict() <span style=color:#66d9ef>for</span> gidx <span style=color:#f92672>in</span> range(num_graphs)} <span style=color:#66d9ef>for</span> it <span style=color:#f92672>in</span> range(<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>, max_h)} <span style=color:#75715e># if key error, return 0</span>
-
-      
-        <span style=color:#75715e># initial labeling</span>
-        <span style=color:#75715e># label_lookup is a dictionary where key is the label. This loops count how often the each </span>
-        <span style=color:#66d9ef>for</span> gidx <span style=color:#f92672>in</span> range(num_graphs):
-            labels[gidx] <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>zeros(len(X[gidx]))
-            current_graph_labels <span style=color:#f92672>=</span> nx<span style=color:#f92672>.</span>get_node_attributes(X[gidx],<span style=color:#e6db74>&#39;label&#39;</span>)
-            <span style=color:#66d9ef>for</span> node <span style=color:#f92672>in</span> X[gidx]<span style=color:#f92672>.</span>nodes():
-                label <span style=color:#f92672>=</span> current_graph_labels<span style=color:#f92672>.</span>get(node, <span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>) <span style=color:#75715e># label of current node, if not labelled it gets -1</span>
-                <span style=color:#66d9ef>if</span> <span style=color:#f92672>not</span> label <span style=color:#f92672>in</span> label_lookup:
-                    <span style=color:#75715e># if we have not observed this label we relabel at the current label_counter</span>
-                    label_lookup[label] <span style=color:#f92672>=</span> label_counter 
-                    labels[gidx][node] <span style=color:#f92672>=</span> label_counter
-                    label_counter <span style=color:#f92672>+=</span> <span style=color:#ae81ff>1</span>
-                <span style=color:#66d9ef>else</span>:
-                    labels[gidx][node] <span style=color:#f92672>=</span> label_lookup[label]
-
-                <span style=color:#75715e># Feature map add </span>
-                wl_graph_map[<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>][gidx][label_lookup[label]] <span style=color:#f92672>=</span> wl_graph_map[<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>][gidx]<span style=color:#f92672>.</span>get(label_lookup[label], <span style=color:#ae81ff>0</span>) <span style=color:#f92672>+</span> <span style=color:#ae81ff>1</span>
-        <span style=color:#75715e># we are constantly changing the label dictionary so we do a deepcopy</span>
-        compressed_labels <span style=color:#f92672>=</span> copy<span style=color:#f92672>.</span>deepcopy(labels)
-
-
-        <span style=color:#75715e># WL iterations</span>
-        <span style=color:#66d9ef>for</span> it <span style=color:#f92672>in</span> range(max_h):
-            label_lookup <span style=color:#f92672>=</span> {}
-            label_counter <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>
-            <span style=color:#66d9ef>for</span> gidx <span style=color:#f92672>in</span> range(num_graphs):
-                <span style=color:#66d9ef>for</span> node <span style=color:#f92672>in</span> X[gidx]<span style=color:#f92672>.</span>nodes():
-                    node_label <span style=color:#f92672>=</span> tuple([labels[gidx][node]])
-                    neighbors <span style=color:#f92672>=</span> list(X[gidx]<span style=color:#f92672>.</span>neighbors(node))
-                    <span style=color:#66d9ef>if</span> len(neighbors) <span style=color:#f92672>&gt;</span> <span style=color:#ae81ff>0</span>:
-                        neighbors_label <span style=color:#f92672>=</span> tuple([labels[gidx][i] <span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> neighbors])
-                        <span style=color:#75715e>#node_label =  str(node_label) + &#34;-&#34; + str(sorted(neighbors_label))</span>
-                        node_label <span style=color:#f92672>=</span> tuple(tuple(node_label) <span style=color:#f92672>+</span> tuple(sorted(neighbors_label)))
-                    <span style=color:#66d9ef>if</span> <span style=color:#f92672>not</span> node_label <span style=color:#f92672>in</span> label_lookup:
-                        label_lookup[node_label] <span style=color:#f92672>=</span> str(label_counter)
-                        compressed_labels[gidx][node] <span style=color:#f92672>=</span> str(label_counter)
-                        label_counter <span style=color:#f92672>+=</span> <span style=color:#ae81ff>1</span>
-                    <span style=color:#66d9ef>else</span>:
-                        compressed_labels[gidx][node] <span style=color:#f92672>=</span> label_lookup[node_label]
-
-                    <span style=color:#75715e># Add to the feature map </span>
-                    wl_graph_map[it][gidx][label_lookup[node_label]] <span style=color:#f92672>=</span> wl_graph_map[it][gidx]<span style=color:#f92672>.</span>get(label_lookup[node_label], <span style=color:#ae81ff>0</span>) <span style=color:#f92672>+</span> <span style=color:#ae81ff>1</span>
-
-            labels <span style=color:#f92672>=</span> copy<span style=color:#f92672>.</span>deepcopy(compressed_labels)
-
-
-        <span style=color:#75715e># Create the cropus which contains the documents (graphs)</span>
-        <span style=color:#75715e># We will also calculate their frequency -&gt; prop_map</span>
-        graphs <span style=color:#f92672>=</span> {}
-        prob_map <span style=color:#f92672>=</span> {}
-        corpus <span style=color:#f92672>=</span> []
-        <span style=color:#66d9ef>for</span> it <span style=color:#f92672>in</span> range(<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>, max_h):
-            <span style=color:#66d9ef>for</span> gidx, label_map <span style=color:#f92672>in</span> wl_graph_map[it]<span style=color:#f92672>.</span>items():
-                <span style=color:#66d9ef>if</span> gidx <span style=color:#f92672>not</span> <span style=color:#f92672>in</span> graphs:
-                    graphs[gidx] <span style=color:#f92672>=</span> []
-                    prob_map[gidx] <span style=color:#f92672>=</span> {}
-                <span style=color:#66d9ef>for</span> label_, count <span style=color:#f92672>in</span> label_map<span style=color:#f92672>.</span>items():
-                    label <span style=color:#f92672>=</span> str(it) <span style=color:#f92672>+</span> <span style=color:#e6db74>&#34;+&#34;</span> <span style=color:#f92672>+</span> str(label_)
-                    <span style=color:#66d9ef>for</span> _ <span style=color:#f92672>in</span> range(count):
-                        graphs[gidx]<span style=color:#f92672>.</span>append(label)
-                    prob_map[gidx][label] <span style=color:#f92672>=</span> count
-
-        prob_map <span style=color:#f92672>=</span> {gidx: {path: count<span style=color:#f92672>/</span>float(sum(paths<span style=color:#f92672>.</span>values())) <span style=color:#66d9ef>for</span> path, count <span style=color:#f92672>in</span> paths<span style=color:#f92672>.</span>items()} <span style=color:#66d9ef>for</span> gidx, paths <span style=color:#f92672>in</span> prob_map<span style=color:#f92672>.</span>items()}
-
-        corpus <span style=color:#f92672>=</span> [graph <span style=color:#66d9ef>for</span> graph <span style=color:#f92672>in</span> graphs<span style=color:#f92672>.</span>values()]
-
-        <span style=color:#66d9ef>return</span> prob_map, corpus, wl_graph_map, graphs
-</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>prob_map, corpus, wl_graph_map, s <span style=color:#f92672>=</span> WLSimilarity(GG, <span style=color:#ae81ff>1</span>)
-</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>corpus[<span style=color:#ae81ff>0</span>]
-</code></pre></div><pre><code>['-1+0',
+</h3></blockquote><div class="layui-card-body markdown-body single-content">
+<h1 id=deep-graph-kernels>Deep Graph Kernels</h1><p>In this notebook I will be constructing a deep graph kernel based on <a href=https://dl.acm.org/doi/10.1145/2783258.2783417>this</a> paper. It utilizes the <a href=https://www.jmlr.org/papers/volume12/shervashidze11a/shervashidze11a.pdf>Weisfeiler-Lehman</a> isomorphism test algorithm and/or the <a href=https://en.wikipedia.org/wiki/Shortest_path_problem>shortest-path </a> algorithm. The kernel is then used for graph classification. The code is taken from <a href=https://github.com/jcatw/scnn/blob/master/scnn/dgk/deep_kernel.py>jcatw</a> which again cites Pinar Yanardag as the original author. The code is adjusted to accommodate the networkx library and python 3.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#f92672>import</span> networkx <span style=color:#66d9ef>as</span> nx
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> pandas <span style=color:#66d9ef>as</span> pd
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> numpy <span style=color:#66d9ef>as</span> np
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> re
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> nltk.stem.porter <span style=color:#f92672>import</span> PorterStemmer
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> copy
+</span></span></code></pre></div><p>We will use the <a href=https://paperswithcode.com/dataset/mutag>mutag</a> dataset which is a collection of nitroaromatic compounds and the goal is to predict their mutagenicity on Salmonella typhimurium. First we extract the dataset from the Grakel (a python graph kernel package) and transform it into a list of networkx (python network package) graphs.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#f92672>from</span> grakel.datasets <span style=color:#f92672>import</span> fetch_dataset
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> grakel.kernels <span style=color:#f92672>import</span> ShortestPath
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># Loads the MUTAG dataset</span>
+</span></span><span style=display:flex><span>MUTAG <span style=color:#f92672>=</span> fetch_dataset(<span style=color:#e6db74>&#34;MUTAG&#34;</span>, verbose<span style=color:#f92672>=</span><span style=color:#66d9ef>False</span>)
+</span></span><span style=display:flex><span>Graphs, y_target <span style=color:#f92672>=</span> MUTAG<span style=color:#f92672>.</span>data, MUTAG<span style=color:#f92672>.</span>target
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>GG <span style=color:#f92672>=</span> []
+</span></span><span style=display:flex><span><span style=color:#66d9ef>for</span> graph <span style=color:#f92672>in</span> Graphs:
+</span></span><span style=display:flex><span>    y <span style=color:#f92672>=</span> nx<span style=color:#f92672>.</span>Graph()
+</span></span><span style=display:flex><span>    y<span style=color:#f92672>.</span>add_edges_from(list(graph[<span style=color:#ae81ff>0</span>]))
+</span></span><span style=display:flex><span>    nx<span style=color:#f92672>.</span>set_node_attributes(y, graph[<span style=color:#ae81ff>1</span>], <span style=color:#e6db74>&#39;label&#39;</span>)
+</span></span><span style=display:flex><span>    y <span style=color:#f92672>=</span>nx<span style=color:#f92672>.</span>convert_node_labels_to_integers(y)
+</span></span><span style=display:flex><span>    GG<span style=color:#f92672>.</span>append(y)
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>nx<span style=color:#f92672>.</span>draw_networkx(GG[<span style=color:#ae81ff>0</span>], labels <span style=color:#f92672>=</span> nx<span style=color:#f92672>.</span>get_node_attributes(GG[<span style=color:#ae81ff>0</span>], <span style=color:#e6db74>&#39;label&#39;</span>))
+</span></span></code></pre></div><p><img src=DeepKernel_3_0.png alt=png></p><p>We can create a kernel matrix where all entries belonging to a class are similar to each other and dissimilar to anything else using:</p><p>$$K(G,G&rsquo;) = \phi(G)^T M \phi(G&rsquo;)$$</p><p>where $M$ is a $|\mathcal{V}| \times |\mathcal{V}|$ psd matrix that encodes the relationship between sub-structures or their proximity where $|\mathcal{V}|$ is the size of the vocabulary. We will let $\phi$ be a the simple the bag of words vector, meaning it counts how often certain sub-structures appear in the graph and is defined as</p><p>$$\phi: G \mapsto \phi(G) = (tf(t_1, G), \dots, tf(T_N, G)) \in {R}^N$$</p><p>where \(tf(t_1, G)\) is the frequency of sub-structure \(t_1\) in graph \(G\). If \(M_{12}\) is large then sub-structure number 1 and 2 are similar but if it is low then they are dissimilar. Given some sub-structures we want to find a good edit-distance to encode the similarity between two sub-structures. A sub-structure is a very general concept. This means that the user can pre-determine which he or she thinks is important for the classification task at hand. Here I will present sub-structures based on the Weisfeiler-Lehman iteration scheme and the shortest-path.</p><h2 id=wl-similarity>WL similarity</h2><p>The Weisfeiler Lehman iteration is a scheme that test for isomorphisms. If the test is accepted then the graphs <strong>could be</strong> isomorphic and if it is rejected then the graphs are not isomorphic. In words, the algorithm updates the label of the node according to their neighbours. Example, the pairs (a, aabc) and (a, abb) where the first index is the node and the second index are the labels of the neighbours, would receive a different label during this WL iteration but (a, aabc) and (a, aabc) would get the same label. This is much better explained in <a href=https://www.semanticscholar.org/paper/Weisfeiler-Lehman-Graph-Kernels-Shervashidze-Schweitzer/7e1874986cf6433fabf96fff93ef42b60bdc49f8/figure/2>this image</a>.</p><p>The algorithm is the following:</p><p><img src=capture.png alt=png></p><p>The following function builds a corpus using the Weisfeiler Lehman iteration scheme. Multiset labels that belong a given iteration \(h\) can be treated as co-occurred in order to partially preserve a notion of similarity. That is for each graph we create a document where the terms in the document are the multi-set labels of the WL-iteration. Thus if two &ldquo;documents&rdquo; contain the multi-set labels they should have a high similarity.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>WLSimilarity</span>( X, max_h):
+</span></span><span style=display:flex><span>        labels <span style=color:#f92672>=</span> {}
+</span></span><span style=display:flex><span>        label_lookup <span style=color:#f92672>=</span> {}
+</span></span><span style=display:flex><span>        <span style=color:#75715e># labels are usually strings so we relabel them as integers for sorting purposes</span>
+</span></span><span style=display:flex><span>        label_counter <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span> 
+</span></span><span style=display:flex><span>        num_graphs <span style=color:#f92672>=</span> len(X)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#75715e># it stands for wl iteration. the initial labelling is indexed at [-1]</span>
+</span></span><span style=display:flex><span>        <span style=color:#75715e># contains the feature map</span>
+</span></span><span style=display:flex><span>        wl_graph_map <span style=color:#f92672>=</span> {it: {gidx: dict() <span style=color:#66d9ef>for</span> gidx <span style=color:#f92672>in</span> range(num_graphs)} <span style=color:#66d9ef>for</span> it <span style=color:#f92672>in</span> range(<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>, max_h)} <span style=color:#75715e># if key error, return 0</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>      
+</span></span><span style=display:flex><span>        <span style=color:#75715e># initial labeling</span>
+</span></span><span style=display:flex><span>        <span style=color:#75715e># label_lookup is a dictionary where key is the label. This loops count how often the each </span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>for</span> gidx <span style=color:#f92672>in</span> range(num_graphs):
+</span></span><span style=display:flex><span>            labels[gidx] <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>zeros(len(X[gidx]))
+</span></span><span style=display:flex><span>            current_graph_labels <span style=color:#f92672>=</span> nx<span style=color:#f92672>.</span>get_node_attributes(X[gidx],<span style=color:#e6db74>&#39;label&#39;</span>)
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>for</span> node <span style=color:#f92672>in</span> X[gidx]<span style=color:#f92672>.</span>nodes():
+</span></span><span style=display:flex><span>                label <span style=color:#f92672>=</span> current_graph_labels<span style=color:#f92672>.</span>get(node, <span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>) <span style=color:#75715e># label of current node, if not labelled it gets -1</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>if</span> <span style=color:#f92672>not</span> label <span style=color:#f92672>in</span> label_lookup:
+</span></span><span style=display:flex><span>                    <span style=color:#75715e># if we have not observed this label we relabel at the current label_counter</span>
+</span></span><span style=display:flex><span>                    label_lookup[label] <span style=color:#f92672>=</span> label_counter 
+</span></span><span style=display:flex><span>                    labels[gidx][node] <span style=color:#f92672>=</span> label_counter
+</span></span><span style=display:flex><span>                    label_counter <span style=color:#f92672>+=</span> <span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>else</span>:
+</span></span><span style=display:flex><span>                    labels[gidx][node] <span style=color:#f92672>=</span> label_lookup[label]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>                <span style=color:#75715e># Feature map add </span>
+</span></span><span style=display:flex><span>                wl_graph_map[<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>][gidx][label_lookup[label]] <span style=color:#f92672>=</span> wl_graph_map[<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>][gidx]<span style=color:#f92672>.</span>get(label_lookup[label], <span style=color:#ae81ff>0</span>) <span style=color:#f92672>+</span> <span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span>        <span style=color:#75715e># we are constantly changing the label dictionary so we do a deepcopy</span>
+</span></span><span style=display:flex><span>        compressed_labels <span style=color:#f92672>=</span> copy<span style=color:#f92672>.</span>deepcopy(labels)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#75715e># WL iterations</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>for</span> it <span style=color:#f92672>in</span> range(max_h):
+</span></span><span style=display:flex><span>            label_lookup <span style=color:#f92672>=</span> {}
+</span></span><span style=display:flex><span>            label_counter <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>for</span> gidx <span style=color:#f92672>in</span> range(num_graphs):
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>for</span> node <span style=color:#f92672>in</span> X[gidx]<span style=color:#f92672>.</span>nodes():
+</span></span><span style=display:flex><span>                    node_label <span style=color:#f92672>=</span> tuple([labels[gidx][node]])
+</span></span><span style=display:flex><span>                    neighbors <span style=color:#f92672>=</span> list(X[gidx]<span style=color:#f92672>.</span>neighbors(node))
+</span></span><span style=display:flex><span>                    <span style=color:#66d9ef>if</span> len(neighbors) <span style=color:#f92672>&gt;</span> <span style=color:#ae81ff>0</span>:
+</span></span><span style=display:flex><span>                        neighbors_label <span style=color:#f92672>=</span> tuple([labels[gidx][i] <span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> neighbors])
+</span></span><span style=display:flex><span>                        <span style=color:#75715e>#node_label =  str(node_label) + &#34;-&#34; + str(sorted(neighbors_label))</span>
+</span></span><span style=display:flex><span>                        node_label <span style=color:#f92672>=</span> tuple(tuple(node_label) <span style=color:#f92672>+</span> tuple(sorted(neighbors_label)))
+</span></span><span style=display:flex><span>                    <span style=color:#66d9ef>if</span> <span style=color:#f92672>not</span> node_label <span style=color:#f92672>in</span> label_lookup:
+</span></span><span style=display:flex><span>                        label_lookup[node_label] <span style=color:#f92672>=</span> str(label_counter)
+</span></span><span style=display:flex><span>                        compressed_labels[gidx][node] <span style=color:#f92672>=</span> str(label_counter)
+</span></span><span style=display:flex><span>                        label_counter <span style=color:#f92672>+=</span> <span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span>                    <span style=color:#66d9ef>else</span>:
+</span></span><span style=display:flex><span>                        compressed_labels[gidx][node] <span style=color:#f92672>=</span> label_lookup[node_label]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>                    <span style=color:#75715e># Add to the feature map </span>
+</span></span><span style=display:flex><span>                    wl_graph_map[it][gidx][label_lookup[node_label]] <span style=color:#f92672>=</span> wl_graph_map[it][gidx]<span style=color:#f92672>.</span>get(label_lookup[node_label], <span style=color:#ae81ff>0</span>) <span style=color:#f92672>+</span> <span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            labels <span style=color:#f92672>=</span> copy<span style=color:#f92672>.</span>deepcopy(compressed_labels)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#75715e># Create the cropus which contains the documents (graphs)</span>
+</span></span><span style=display:flex><span>        <span style=color:#75715e># We will also calculate their frequency -&gt; prop_map</span>
+</span></span><span style=display:flex><span>        graphs <span style=color:#f92672>=</span> {}
+</span></span><span style=display:flex><span>        prob_map <span style=color:#f92672>=</span> {}
+</span></span><span style=display:flex><span>        corpus <span style=color:#f92672>=</span> []
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>for</span> it <span style=color:#f92672>in</span> range(<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>, max_h):
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>for</span> gidx, label_map <span style=color:#f92672>in</span> wl_graph_map[it]<span style=color:#f92672>.</span>items():
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>if</span> gidx <span style=color:#f92672>not</span> <span style=color:#f92672>in</span> graphs:
+</span></span><span style=display:flex><span>                    graphs[gidx] <span style=color:#f92672>=</span> []
+</span></span><span style=display:flex><span>                    prob_map[gidx] <span style=color:#f92672>=</span> {}
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>for</span> label_, count <span style=color:#f92672>in</span> label_map<span style=color:#f92672>.</span>items():
+</span></span><span style=display:flex><span>                    label <span style=color:#f92672>=</span> str(it) <span style=color:#f92672>+</span> <span style=color:#e6db74>&#34;+&#34;</span> <span style=color:#f92672>+</span> str(label_)
+</span></span><span style=display:flex><span>                    <span style=color:#66d9ef>for</span> _ <span style=color:#f92672>in</span> range(count):
+</span></span><span style=display:flex><span>                        graphs[gidx]<span style=color:#f92672>.</span>append(label)
+</span></span><span style=display:flex><span>                    prob_map[gidx][label] <span style=color:#f92672>=</span> count
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        prob_map <span style=color:#f92672>=</span> {gidx: {path: count<span style=color:#f92672>/</span>float(sum(paths<span style=color:#f92672>.</span>values())) <span style=color:#66d9ef>for</span> path, count <span style=color:#f92672>in</span> paths<span style=color:#f92672>.</span>items()} <span style=color:#66d9ef>for</span> gidx, paths <span style=color:#f92672>in</span> prob_map<span style=color:#f92672>.</span>items()}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        corpus <span style=color:#f92672>=</span> [graph <span style=color:#66d9ef>for</span> graph <span style=color:#f92672>in</span> graphs<span style=color:#f92672>.</span>values()]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> prob_map, corpus, wl_graph_map, graphs
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>prob_map, corpus, wl_graph_map, s <span style=color:#f92672>=</span> WLSimilarity(GG, <span style=color:#ae81ff>1</span>)
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>corpus[<span style=color:#ae81ff>0</span>]
+</span></span></code></pre></div><pre><code>['-1+0',
    ...
  '-1+0',
  '-1+1',
@@ -206,46 +179,42 @@ nx<span style=color:#f92672>.</span>draw_networkx(GG[<span style=color:#ae81ff>0
  '0+3',
  '0+3',
  '0+4']
-</code></pre>
-<p>The first number tells us which WL iteration the multilabel set belongs to, and the second number tells us which multilabel it received. Note that although we see &ldquo;-1+0&rdquo; and &ldquo;0+0&rdquo;, it does not mean that we saw both the multilabel 0 at the initalization and multilabel 0 at the first iteration. The label counter is simply reset to 0 at each WL iteration.</p>
-<h2 id=shortest-path-similarity>Shortest path similarity</h2>
-<p>We can also build shortest path similarity. It is known that the if there is a shortest path between nodes a and b then all sub-paths are also shortest paths. Using this property we can generate &ldquo;documents&rdquo; as the collection of all sub-paths in a graph.</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>ShortestPathSimilarity</span>(X, cutoff <span style=color:#f92672>=</span> <span style=color:#66d9ef>None</span>):
-    <span style=color:#e6db74>&#34;&#34;&#34;
-</span><span style=color:#e6db74>    Creates shortest path similarity for the Deep Kernel
-</span><span style=color:#e6db74>
-</span><span style=color:#e6db74>    :param X: List of nx graphs
-</span><span style=color:#e6db74>    &#34;&#34;&#34;</span>
-    vocabulary <span style=color:#f92672>=</span> set()
-    prob_map <span style=color:#f92672>=</span> {}
-    corpus <span style=color:#f92672>=</span> []
-
-    <span style=color:#66d9ef>for</span> gidx, graph <span style=color:#f92672>in</span> enumerate(X):
-
-        prob_map[gidx] <span style=color:#f92672>=</span> {}
-        <span style=color:#75715e># label of each node</span>
-        label_map <span style=color:#f92672>=</span> list(nx<span style=color:#f92672>.</span>get_node_attributes(graph,<span style=color:#e6db74>&#39;label&#39;</span>)<span style=color:#f92672>.</span>values())
-        <span style=color:#75715e># get all pairs shortest paths</span>
-        all_shortest_paths <span style=color:#f92672>=</span> nx<span style=color:#f92672>.</span>all_pairs_shortest_path(graph,cutoff) <span style=color:#75715e># nx.floyd_warshall(G)</span>
-        <span style=color:#75715e># traverse all paths and subpaths</span>
-        tmp_corpus <span style=color:#f92672>=</span> []
-        <span style=color:#75715e># source is node we are going from</span>
-        <span style=color:#75715e># sink is node that we are walking to</span>
-        <span style=color:#66d9ef>for</span> source, sink_map <span style=color:#f92672>in</span> all_shortest_paths:
-            <span style=color:#66d9ef>for</span> sink, path <span style=color:#f92672>in</span> sink_map<span style=color:#f92672>.</span>items():
-                sp_length <span style=color:#f92672>=</span> len(path)<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>
-                label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;_&#34;</span><span style=color:#f92672>.</span>join(map(str, sorted([label_map[source],label_map[sink]]))) <span style=color:#f92672>+</span> <span style=color:#e6db74>&#34;_&#34;</span> <span style=color:#f92672>+</span> str(sp_length) 
-                tmp_corpus<span style=color:#f92672>.</span>append(label)
-                prob_map[gidx][label] <span style=color:#f92672>=</span> prob_map[gidx]<span style=color:#f92672>.</span>get(label, <span style=color:#ae81ff>0</span>) <span style=color:#f92672>+</span> <span style=color:#ae81ff>1</span>
-                vocabulary<span style=color:#f92672>.</span>add(label)
-        corpus<span style=color:#f92672>.</span>append(tmp_corpus)
-        <span style=color:#75715e># Normalize frequency</span>
-    prob_map <span style=color:#f92672>=</span> {gidx: {path: count<span style=color:#f92672>/</span>float(sum(paths<span style=color:#f92672>.</span>values())) <span style=color:#66d9ef>for</span> path, count <span style=color:#f92672>in</span> paths<span style=color:#f92672>.</span>items()} <span style=color:#66d9ef>for</span> gidx, paths <span style=color:#f92672>in</span> prob_map<span style=color:#f92672>.</span>items()}
-
-    <span style=color:#66d9ef>return</span> prob_map, corpus, label_map
-</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>prob_map, corpus, label_map <span style=color:#f92672>=</span> ShortestPathSimilarity(GG)
-</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>corpus[<span style=color:#ae81ff>0</span>]
-</code></pre></div><pre><code>['0_0_0',
+</code></pre><p>The first number tells us which WL iteration the multilabel set belongs to, and the second number tells us which multilabel it received. Note that although we see &ldquo;-1+0&rdquo; and &ldquo;0+0&rdquo;, it does not mean that we saw both the multilabel 0 at the initalization and multilabel 0 at the first iteration. The label counter is simply reset to 0 at each WL iteration.</p><h2 id=shortest-path-similarity>Shortest path similarity</h2><p>We can also build shortest path similarity. It is known that the if there is a shortest path between nodes a and b then all sub-paths are also shortest paths. Using this property we can generate &ldquo;documents&rdquo; as the collection of all sub-paths in a graph.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>ShortestPathSimilarity</span>(X, cutoff <span style=color:#f92672>=</span> <span style=color:#66d9ef>None</span>):
+</span></span><span style=display:flex><span>    <span style=color:#e6db74>&#34;&#34;&#34;
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>    Creates shortest path similarity for the Deep Kernel
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>    :param X: List of nx graphs
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>    &#34;&#34;&#34;</span>
+</span></span><span style=display:flex><span>    vocabulary <span style=color:#f92672>=</span> set()
+</span></span><span style=display:flex><span>    prob_map <span style=color:#f92672>=</span> {}
+</span></span><span style=display:flex><span>    corpus <span style=color:#f92672>=</span> []
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span> gidx, graph <span style=color:#f92672>in</span> enumerate(X):
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        prob_map[gidx] <span style=color:#f92672>=</span> {}
+</span></span><span style=display:flex><span>        <span style=color:#75715e># label of each node</span>
+</span></span><span style=display:flex><span>        label_map <span style=color:#f92672>=</span> list(nx<span style=color:#f92672>.</span>get_node_attributes(graph,<span style=color:#e6db74>&#39;label&#39;</span>)<span style=color:#f92672>.</span>values())
+</span></span><span style=display:flex><span>        <span style=color:#75715e># get all pairs shortest paths</span>
+</span></span><span style=display:flex><span>        all_shortest_paths <span style=color:#f92672>=</span> nx<span style=color:#f92672>.</span>all_pairs_shortest_path(graph,cutoff) <span style=color:#75715e># nx.floyd_warshall(G)</span>
+</span></span><span style=display:flex><span>        <span style=color:#75715e># traverse all paths and subpaths</span>
+</span></span><span style=display:flex><span>        tmp_corpus <span style=color:#f92672>=</span> []
+</span></span><span style=display:flex><span>        <span style=color:#75715e># source is node we are going from</span>
+</span></span><span style=display:flex><span>        <span style=color:#75715e># sink is node that we are walking to</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>for</span> source, sink_map <span style=color:#f92672>in</span> all_shortest_paths:
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>for</span> sink, path <span style=color:#f92672>in</span> sink_map<span style=color:#f92672>.</span>items():
+</span></span><span style=display:flex><span>                sp_length <span style=color:#f92672>=</span> len(path)<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span>                label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;_&#34;</span><span style=color:#f92672>.</span>join(map(str, sorted([label_map[source],label_map[sink]]))) <span style=color:#f92672>+</span> <span style=color:#e6db74>&#34;_&#34;</span> <span style=color:#f92672>+</span> str(sp_length) 
+</span></span><span style=display:flex><span>                tmp_corpus<span style=color:#f92672>.</span>append(label)
+</span></span><span style=display:flex><span>                prob_map[gidx][label] <span style=color:#f92672>=</span> prob_map[gidx]<span style=color:#f92672>.</span>get(label, <span style=color:#ae81ff>0</span>) <span style=color:#f92672>+</span> <span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span>                vocabulary<span style=color:#f92672>.</span>add(label)
+</span></span><span style=display:flex><span>        corpus<span style=color:#f92672>.</span>append(tmp_corpus)
+</span></span><span style=display:flex><span>        <span style=color:#75715e># Normalize frequency</span>
+</span></span><span style=display:flex><span>    prob_map <span style=color:#f92672>=</span> {gidx: {path: count<span style=color:#f92672>/</span>float(sum(paths<span style=color:#f92672>.</span>values())) <span style=color:#66d9ef>for</span> path, count <span style=color:#f92672>in</span> paths<span style=color:#f92672>.</span>items()} <span style=color:#66d9ef>for</span> gidx, paths <span style=color:#f92672>in</span> prob_map<span style=color:#f92672>.</span>items()}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> prob_map, corpus, label_map
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>prob_map, corpus, label_map <span style=color:#f92672>=</span> ShortestPathSimilarity(GG)
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>corpus[<span style=color:#ae81ff>0</span>]
+</span></span></code></pre></div><pre><code>['0_0_0',
  '0_0_1',
  '0_0_1',
  '0_0_2',
@@ -256,186 +225,149 @@ nx<span style=color:#f92672>.</span>draw_networkx(GG[<span style=color:#ae81ff>0
  '0_2_8',
  '0_2_8',
  '0_2_9']
-</code></pre>
-<p>We can see how the words in the documents have the form node1_node2_l which means that there exists a path from node1 to node_2 of length l.</p>
-<h1 id=building-m>Building M</h1>
-<p>We could simply let \(M = I\) where \(I\) is the identy matrix and than the kernel is simply a bag-of-words kernels, where the vector is a frequency count of the words. We can try to learn the similarity matrix using the <a href=https://arxiv.org/abs/1301.3781>Word2vec</a> model or more specifically the skip-a-gram version.</p>
-<p>The skip-a-gram model hot-encodes our word into the vector $x \in R^N$ where N is the number of words in the vocabulary. Then we define</p>
-<p>$$h = W^{(1)}x$$
-$$u = W^{(2)}h$$</p>
-<p>where \(W_1 \in R^{N \times L}\) and \(W_2 \in R^{L \times N}\) where \(M\) is the dimension of our word representation.</p>
-<p>Then the softmax function is applied to \(y_c = \text{softmax}(u)\) for \(c = 1, \dots, C\) where \(C\) is the number of words to predict given word \(x\).</p>
-<p>The negative log-likelihood is</p>
-<p>$$\mathcal{L} = -\log \prod_{c=1}^C P(w_{c,i} | w_o) = - \sum_{c=1}^C u_{c, j^*} + \sum_{c=1}^C \log \sum_{n=1}^N \exp(u_{c,n})$$</p>
-<p>\(j^{*}\) denotes the ground truth for that given panel and \(u_{c,n}\) is the n-th entry in the vector \(u_c\).</p>
-<p>We want find the weights \(W^{(1)}\) and \(W^{(2)}\), so we take the derivative with respect to each entry:</p>
-<p>\[\frac{\partial \mathcal{L}}{\partial W^{(1)}_{ij}} = \sum_{n = 1}^N \sum_{c=1}^C \frac{\partial \mathcal{L}}{\partial u_{c, n}} \frac{\partial u_{c, n}}{\partial W^{(1)}_{ij}}\]</p>
-<p>$$ \frac{\partial \mathcal{L}}{\partial W_{ij}^{(2)}} = \sum_{n = 1}^{N} \sum_{c=1}^{C} \frac{\partial \mathcal{L}}{\partial u_{c, n}} \frac{\partial u_{c, n}}{\partial W^{(2)}_{ij}} $$</p>
-<p>We can show that</p>
-<p>$$ \frac{\partial \mathcal{L}}{\partial u_{c, n}} = -\delta_{jj^*} + y_{c, n} $$</p>
-<p>Defining \(E_n = \sum_{c=1}^C \Big( -\delta_{ii^*} + y_{c, n}\Big)\), gives</p>
-<p>$$\begin{aligned}
+</code></pre><p>We can see how the words in the documents have the form node1_node2_l which means that there exists a path from node1 to node_2 of length l.</p><h1 id=building-m>Building M</h1><p>We could simply let \(M = I\) where \(I\) is the identy matrix and than the kernel is simply a bag-of-words kernels, where the vector is a frequency count of the words. We can try to learn the similarity matrix using the <a href=https://arxiv.org/abs/1301.3781>Word2vec</a> model or more specifically the skip-a-gram version.</p><p>The skip-a-gram model hot-encodes our word into the vector $x \in R^N$ where N is the number of words in the vocabulary. Then we define</p><p>$$h = W^{(1)}x$$
+$$u = W^{(2)}h$$</p><p>where \(W_1 \in R^{N \times L}\) and \(W_2 \in R^{L \times N}\) where \(M\) is the dimension of our word representation.</p><p>Then the softmax function is applied to \(y_c = \text{softmax}(u)\) for \(c = 1, \dots, C\) where \(C\) is the number of words to predict given word \(x\).</p><p>The negative log-likelihood is</p><p>$$\mathcal{L} = -\log \prod_{c=1}^C P(w_{c,i} | w_o) = - \sum_{c=1}^C u_{c, j^*} + \sum_{c=1}^C \log \sum_{n=1}^N \exp(u_{c,n})$$</p><p>\(j^{*}\) denotes the ground truth for that given panel and \(u_{c,n}\) is the n-th entry in the vector \(u_c\).</p><p>We want find the weights \(W^{(1)}\) and \(W^{(2)}\), so we take the derivative with respect to each entry:</p><p>\[\frac{\partial \mathcal{L}}{\partial W^{(1)}_{ij}} = \sum_{n = 1}^N \sum_{c=1}^C \frac{\partial \mathcal{L}}{\partial u_{c, n}} \frac{\partial u_{c, n}}{\partial W^{(1)}_{ij}}\]</p><p>$$ \frac{\partial \mathcal{L}}{\partial W_{ij}^{(2)}} = \sum_{n = 1}^{N} \sum_{c=1}^{C} \frac{\partial \mathcal{L}}{\partial u_{c, n}} \frac{\partial u_{c, n}}{\partial W^{(2)}_{ij}} $$</p><p>We can show that</p><p>$$ \frac{\partial \mathcal{L}}{\partial u_{c, n}} = -\delta_{jj^*} + y_{c, n} $$</p><p>Defining \(E_n = \sum_{c=1}^C \Big( -\delta_{ii^*} + y_{c, n}\Big)\), gives</p><p>$$\begin{aligned}
 \frac{\partial \mathcal{L}}{\partial W_{ij}^{(1)}} &= \sum_{n = 1}^N \sum_{c=1}^C \Big( -\delta_{ii^<em>} + y_{c, n}\Big) \frac{\partial}{\partial W^{(1)}<em>{ij}} \Big( \sum</em>{k=1}^N\sum_{l = 1}^L W_{nk}^{(2)}W_{kl}^{(1)} x_m\Big) \\\
 &= \sum_{n = 1}^N \sum_{c=1}^C \Big( -\delta_{ii^</em>} + y_{c, n}\Big) W^{(2)}<em>{ni}x_j \\\
 &= \sum</em>{n = 1}^N E_n W^{(2)}<em>{ni}x_j \\\
 &= [E^TW^{(2)}]</em>{i}x_{j}
-\end{aligned}$$</p>
-<p>and</p>
-<p>$$
+\end{aligned}$$</p><p>and</p><p>$$
 \begin{aligned}
 \frac{\partial \mathcal{L}}{\partial W_{ij}^{(2)}} &= \sum_{c=1}^C \Big( -\delta_{ii^<em>} + y_{c, i}\Big) \frac{\partial}{\partial W^{(2)}<em>{ij}} \Big( \sum</em>{k=1}^N\sum_{l = 1}^L W_{nk}^{(2)}W_{kl}^{(1)} x_l\Big) \\\
 &= \sum_{c=1}^C \Big( -\delta_{ii^</em>} + y_{c, i}\Big) \sum_{l = 1}^L W_{jl}^{(1)}x_l \\\
 &= \sum_{c=1}^C \Big( -\delta_{ii^*} + y_{c, i}\Big) h_j \\\
 &= E_i h_j
 \end{aligned}
-$$</p>
-<p>We the use stochastic gradient descent with learning rate $\eta$ to minimize the loss</p>
-<p>$$ W_{ij}^{(1), t} = W_{ij}^{(1), t-1} - \eta \frac{\partial \mathcal{L}}{\partial W_{ij}^{(1)}} $$
-$$ W_{ij}^{(2), t} = W_{ij}^{(2), t-1} - \eta \frac{\partial \mathcal{L}}{\partial W_{ij}^{(2)}} $$</p>
-<p>Finally our similarity matrix is then \(W_1 W_1^T\), which can be seen as the the dot product of our word embeddings.</p>
-<p>We start by writing a function that hot-encodes our words:</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>one_hot_encode</span>(vocab):
-
-    one_hot <span style=color:#f92672>=</span> dict()
-    words <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array(list(vocab<span style=color:#f92672>.</span>keys()))
-
-    <span style=color:#66d9ef>for</span> k <span style=color:#f92672>in</span> vocab<span style=color:#f92672>.</span>keys():
-        tmp <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>zeros(len(vocab))
-        tmp[k <span style=color:#f92672>==</span> words] <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>
-        one_hot[k] <span style=color:#f92672>=</span> tmp
-
-    <span style=color:#66d9ef>return</span> one_hot
-</code></pre></div><p>Then we write a function that transform our corpus set into a one-hot encoding dataset</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#75715e># GENERATE TRAINING DATA</span>
-<span style=color:#66d9ef>def</span> <span style=color:#a6e22e>transform_corpus</span>(corpus, one_hot, window <span style=color:#f92672>=</span> <span style=color:#ae81ff>2</span>):
-
-    training_data <span style=color:#f92672>=</span> []
-
-    <span style=color:#75715e># for each word in each sentence look at window-neighbours and give the pair as training data</span>
-    cnt <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>
-    <span style=color:#66d9ef>for</span> sentence <span style=color:#f92672>in</span> corpus:
-        <span style=color:#75715e># print(f&#39;{cnt} {len(corpus)}&#39;)</span>
-        cnt <span style=color:#f92672>+=</span> <span style=color:#ae81ff>1</span>
-        sent_len <span style=color:#f92672>=</span> len(sentence)
-
-        <span style=color:#66d9ef>for</span> i, word <span style=color:#f92672>in</span> enumerate(sentence):
-            
-            w_target <span style=color:#f92672>=</span> one_hot[word]
-
-            w_context <span style=color:#f92672>=</span> []
-            <span style=color:#66d9ef>for</span> j <span style=color:#f92672>in</span> range(i<span style=color:#f92672>-</span>window, i<span style=color:#f92672>+</span>window<span style=color:#f92672>+</span><span style=color:#ae81ff>1</span>):
-                <span style=color:#66d9ef>if</span> j<span style=color:#f92672>!=</span>i <span style=color:#f92672>and</span> j<span style=color:#f92672>&lt;=</span>sent_len<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span> <span style=color:#f92672>and</span> j<span style=color:#f92672>&gt;=</span><span style=color:#ae81ff>0</span>:
-                    w_context<span style=color:#f92672>.</span>append(one_hot[sentence[j]])
-            training_data<span style=color:#f92672>.</span>append([w_target, w_context])
-    <span style=color:#66d9ef>return</span> training_data
-
-
-<span style=color:#66d9ef>def</span> <span style=color:#a6e22e>get_vocab</span>(train_docs, test_docs):
-    vocab <span style=color:#f92672>=</span> dict()
-    
-    <span style=color:#66d9ef>for</span> doc <span style=color:#f92672>in</span> train_docs:
-        <span style=color:#66d9ef>for</span> word <span style=color:#f92672>in</span> doc:
-            <span style=color:#66d9ef>if</span> word <span style=color:#f92672>not</span> <span style=color:#f92672>in</span> vocab:
-                vocab[word] <span style=color:#f92672>=</span> len(vocab)
-
-    <span style=color:#66d9ef>for</span> doc <span style=color:#f92672>in</span> test_docs:
-        <span style=color:#66d9ef>for</span> word <span style=color:#f92672>in</span> doc:
-            <span style=color:#66d9ef>if</span> word <span style=color:#f92672>not</span> <span style=color:#f92672>in</span> vocab:
-                vocab[word] <span style=color:#f92672>=</span> len(vocab)
-        
-    <span style=color:#66d9ef>return</span> vocab
-
-</code></pre></div><p>Finally we learn the embedding</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>forward_pass</span>(W1, W2, x):
-    h <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>dot(W1, x)
-    u_c <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>dot(W2, h)
-    y_c <span style=color:#f92672>=</span> softmax(u_c)
-
-    <span style=color:#75715e># h = np.dot(W1.T, x)</span>
-    <span style=color:#75715e># u_c = np.dot(W2.T, h)</span>
-    <span style=color:#75715e># y_c = softmax(u_c)</span>
-
-    <span style=color:#66d9ef>return</span> y_c, h, u_c
-
-<span style=color:#66d9ef>def</span> <span style=color:#a6e22e>softmax</span>(x):
-    e_x <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>exp(x <span style=color:#f92672>-</span> np<span style=color:#f92672>.</span>max(x))  <span style=color:#75715e># - np.max(x) trick for numerical precision</span>
-    <span style=color:#66d9ef>return</span> e_x <span style=color:#f92672>/</span> e_x<span style=color:#f92672>.</span>sum(axis<span style=color:#f92672>=</span><span style=color:#ae81ff>0</span>)
-
-<span style=color:#66d9ef>def</span> <span style=color:#a6e22e>backprop</span>( E, h, x, W1 ,W2, eta):
-
-    dw2 <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>outer(E, h)
-    dw1 <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>outer(np<span style=color:#f92672>.</span>dot(E<span style=color:#f92672>.</span>T, W2), x)
-
-    <span style=color:#75715e># UPDATE WEIGHTS</span>
-    W1 <span style=color:#f92672>=</span> W1 <span style=color:#f92672>-</span> (eta <span style=color:#f92672>*</span> dw1)
-    W2 <span style=color:#f92672>=</span> W2 <span style=color:#f92672>-</span> (eta <span style=color:#f92672>*</span> dw2)
-
-
-    <span style=color:#66d9ef>return</span> W1, W2
-</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>train</span>(training_data, L, eta <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.05</span>, epochs <span style=color:#f92672>=</span> <span style=color:#ae81ff>20</span>):
-
-    N <span style=color:#f92672>=</span> len(training_data[<span style=color:#ae81ff>0</span>][<span style=color:#ae81ff>0</span>])
-
-    <span style=color:#75715e># INITIALIZE WEIGHT MATRICES</span>
-    W1 <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>random<span style=color:#f92672>.</span>uniform(<span style=color:#f92672>-</span><span style=color:#ae81ff>0.7</span>, <span style=color:#ae81ff>0.7</span>, (L, N ))
-    W2 <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>random<span style=color:#f92672>.</span>uniform(<span style=color:#f92672>-</span><span style=color:#ae81ff>0.7</span>, <span style=color:#ae81ff>0.7</span>, (N, L))
-
-
-    <span style=color:#75715e># CYCLE THROUGH EACH EPOCH</span>
-    <span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(<span style=color:#ae81ff>0</span>, epochs):
-
-        loss <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>
-
-        <span style=color:#66d9ef>for</span> w_t, w_c <span style=color:#f92672>in</span> training_data:
-
-            y_pred, h, u <span style=color:#f92672>=</span> forward_pass(W1, W2, np<span style=color:#f92672>.</span>array(w_t))
-
-            error <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>sum([np<span style=color:#f92672>.</span>subtract(y_pred, word) <span style=color:#66d9ef>for</span> word <span style=color:#f92672>in</span> w_c], axis<span style=color:#f92672>=</span><span style=color:#ae81ff>0</span>)
-
-            W1, W2 <span style=color:#f92672>=</span> backprop(error, h, np<span style=color:#f92672>.</span>array(w_t), W1, W2, eta)
-
-            loss <span style=color:#f92672>+=</span> <span style=color:#f92672>-</span>np<span style=color:#f92672>.</span>sum([u[np<span style=color:#f92672>.</span>where(word <span style=color:#f92672>==</span> <span style=color:#ae81ff>1</span>)] <span style=color:#66d9ef>for</span> word <span style=color:#f92672>in</span> w_c]) <span style=color:#f92672>+</span> len(w_c) <span style=color:#f92672>*</span> np<span style=color:#f92672>.</span>log(np<span style=color:#f92672>.</span>sum(np<span style=color:#f92672>.</span>exp(u)))
-
-        print(<span style=color:#e6db74>f</span><span style=color:#e6db74>&#39;EPOCH: </span><span style=color:#e6db74>{</span>i<span style=color:#e6db74>}</span><span style=color:#e6db74>, LOSS: </span><span style=color:#e6db74>{</span>loss<span style=color:#e6db74>}</span><span style=color:#e6db74>&#39;</span>)
-
-
-    <span style=color:#66d9ef>return</span> W1, W2
-
-</code></pre></div><p>Let&rsquo;s start with a very simple corpus, too see if you probabilities make sense</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>corpus <span style=color:#f92672>=</span> [[<span style=color:#e6db74>&#39;the&#39;</span>,<span style=color:#e6db74>&#39;quick&#39;</span>,<span style=color:#e6db74>&#39;brown&#39;</span>,<span style=color:#e6db74>&#39;fox&#39;</span>,<span style=color:#e6db74>&#39;jumped&#39;</span>,<span style=color:#e6db74>&#39;over&#39;</span>,<span style=color:#e6db74>&#39;the&#39;</span>,<span style=color:#e6db74>&#39;lazy&#39;</span>,<span style=color:#e6db74>&#39;dog&#39;</span>]]
-vocab <span style=color:#f92672>=</span> get_vocab(corpus,[])
-one_hot <span style=color:#f92672>=</span> one_hot_encode(vocab)
-training_data <span style=color:#f92672>=</span> transform_corpus(corpus, one_hot, window<span style=color:#f92672>=</span><span style=color:#ae81ff>2</span>)
-</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>W1, W2 <span style=color:#f92672>=</span> train(training_data, <span style=color:#ae81ff>5</span>, eta <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.01</span>, epochs<span style=color:#f92672>=</span> <span style=color:#ae81ff>5000</span>)
-</code></pre></div><pre><code>EPOCH: 0, LOSS: 62.70608789420015
+$$</p><p>We the use stochastic gradient descent with learning rate $\eta$ to minimize the loss</p><p>$$ W_{ij}^{(1), t} = W_{ij}^{(1), t-1} - \eta \frac{\partial \mathcal{L}}{\partial W_{ij}^{(1)}} $$
+$$ W_{ij}^{(2), t} = W_{ij}^{(2), t-1} - \eta \frac{\partial \mathcal{L}}{\partial W_{ij}^{(2)}} $$</p><p>Finally our similarity matrix is then \(W_1 W_1^T\), which can be seen as the the dot product of our word embeddings.</p><p>We start by writing a function that hot-encodes our words:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>one_hot_encode</span>(vocab):
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    one_hot <span style=color:#f92672>=</span> dict()
+</span></span><span style=display:flex><span>    words <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array(list(vocab<span style=color:#f92672>.</span>keys()))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span> k <span style=color:#f92672>in</span> vocab<span style=color:#f92672>.</span>keys():
+</span></span><span style=display:flex><span>        tmp <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>zeros(len(vocab))
+</span></span><span style=display:flex><span>        tmp[k <span style=color:#f92672>==</span> words] <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span>        one_hot[k] <span style=color:#f92672>=</span> tmp
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> one_hot
+</span></span></code></pre></div><p>Then we write a function that transform our corpus set into a one-hot encoding dataset</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#75715e># GENERATE TRAINING DATA</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>transform_corpus</span>(corpus, one_hot, window <span style=color:#f92672>=</span> <span style=color:#ae81ff>2</span>):
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    training_data <span style=color:#f92672>=</span> []
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#75715e># for each word in each sentence look at window-neighbours and give the pair as training data</span>
+</span></span><span style=display:flex><span>    cnt <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span> sentence <span style=color:#f92672>in</span> corpus:
+</span></span><span style=display:flex><span>        <span style=color:#75715e># print(f&#39;{cnt} {len(corpus)}&#39;)</span>
+</span></span><span style=display:flex><span>        cnt <span style=color:#f92672>+=</span> <span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span>        sent_len <span style=color:#f92672>=</span> len(sentence)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>for</span> i, word <span style=color:#f92672>in</span> enumerate(sentence):
+</span></span><span style=display:flex><span>            
+</span></span><span style=display:flex><span>            w_target <span style=color:#f92672>=</span> one_hot[word]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            w_context <span style=color:#f92672>=</span> []
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>for</span> j <span style=color:#f92672>in</span> range(i<span style=color:#f92672>-</span>window, i<span style=color:#f92672>+</span>window<span style=color:#f92672>+</span><span style=color:#ae81ff>1</span>):
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>if</span> j<span style=color:#f92672>!=</span>i <span style=color:#f92672>and</span> j<span style=color:#f92672>&lt;=</span>sent_len<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span> <span style=color:#f92672>and</span> j<span style=color:#f92672>&gt;=</span><span style=color:#ae81ff>0</span>:
+</span></span><span style=display:flex><span>                    w_context<span style=color:#f92672>.</span>append(one_hot[sentence[j]])
+</span></span><span style=display:flex><span>            training_data<span style=color:#f92672>.</span>append([w_target, w_context])
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> training_data
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>get_vocab</span>(train_docs, test_docs):
+</span></span><span style=display:flex><span>    vocab <span style=color:#f92672>=</span> dict()
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span> doc <span style=color:#f92672>in</span> train_docs:
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>for</span> word <span style=color:#f92672>in</span> doc:
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> word <span style=color:#f92672>not</span> <span style=color:#f92672>in</span> vocab:
+</span></span><span style=display:flex><span>                vocab[word] <span style=color:#f92672>=</span> len(vocab)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span> doc <span style=color:#f92672>in</span> test_docs:
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>for</span> word <span style=color:#f92672>in</span> doc:
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> word <span style=color:#f92672>not</span> <span style=color:#f92672>in</span> vocab:
+</span></span><span style=display:flex><span>                vocab[word] <span style=color:#f92672>=</span> len(vocab)
+</span></span><span style=display:flex><span>        
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> vocab
+</span></span></code></pre></div><p>Finally we learn the embedding</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>forward_pass</span>(W1, W2, x):
+</span></span><span style=display:flex><span>    h <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>dot(W1, x)
+</span></span><span style=display:flex><span>    u_c <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>dot(W2, h)
+</span></span><span style=display:flex><span>    y_c <span style=color:#f92672>=</span> softmax(u_c)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#75715e># h = np.dot(W1.T, x)</span>
+</span></span><span style=display:flex><span>    <span style=color:#75715e># u_c = np.dot(W2.T, h)</span>
+</span></span><span style=display:flex><span>    <span style=color:#75715e># y_c = softmax(u_c)</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> y_c, h, u_c
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>softmax</span>(x):
+</span></span><span style=display:flex><span>    e_x <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>exp(x <span style=color:#f92672>-</span> np<span style=color:#f92672>.</span>max(x))  <span style=color:#75715e># - np.max(x) trick for numerical precision</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> e_x <span style=color:#f92672>/</span> e_x<span style=color:#f92672>.</span>sum(axis<span style=color:#f92672>=</span><span style=color:#ae81ff>0</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>backprop</span>( E, h, x, W1 ,W2, eta):
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    dw2 <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>outer(E, h)
+</span></span><span style=display:flex><span>    dw1 <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>outer(np<span style=color:#f92672>.</span>dot(E<span style=color:#f92672>.</span>T, W2), x)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#75715e># UPDATE WEIGHTS</span>
+</span></span><span style=display:flex><span>    W1 <span style=color:#f92672>=</span> W1 <span style=color:#f92672>-</span> (eta <span style=color:#f92672>*</span> dw1)
+</span></span><span style=display:flex><span>    W2 <span style=color:#f92672>=</span> W2 <span style=color:#f92672>-</span> (eta <span style=color:#f92672>*</span> dw2)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> W1, W2
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>train</span>(training_data, L, eta <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.05</span>, epochs <span style=color:#f92672>=</span> <span style=color:#ae81ff>20</span>):
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    N <span style=color:#f92672>=</span> len(training_data[<span style=color:#ae81ff>0</span>][<span style=color:#ae81ff>0</span>])
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#75715e># INITIALIZE WEIGHT MATRICES</span>
+</span></span><span style=display:flex><span>    W1 <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>random<span style=color:#f92672>.</span>uniform(<span style=color:#f92672>-</span><span style=color:#ae81ff>0.7</span>, <span style=color:#ae81ff>0.7</span>, (L, N ))
+</span></span><span style=display:flex><span>    W2 <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>random<span style=color:#f92672>.</span>uniform(<span style=color:#f92672>-</span><span style=color:#ae81ff>0.7</span>, <span style=color:#ae81ff>0.7</span>, (N, L))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#75715e># CYCLE THROUGH EACH EPOCH</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(<span style=color:#ae81ff>0</span>, epochs):
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        loss <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>for</span> w_t, w_c <span style=color:#f92672>in</span> training_data:
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            y_pred, h, u <span style=color:#f92672>=</span> forward_pass(W1, W2, np<span style=color:#f92672>.</span>array(w_t))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            error <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>sum([np<span style=color:#f92672>.</span>subtract(y_pred, word) <span style=color:#66d9ef>for</span> word <span style=color:#f92672>in</span> w_c], axis<span style=color:#f92672>=</span><span style=color:#ae81ff>0</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            W1, W2 <span style=color:#f92672>=</span> backprop(error, h, np<span style=color:#f92672>.</span>array(w_t), W1, W2, eta)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            loss <span style=color:#f92672>+=</span> <span style=color:#f92672>-</span>np<span style=color:#f92672>.</span>sum([u[np<span style=color:#f92672>.</span>where(word <span style=color:#f92672>==</span> <span style=color:#ae81ff>1</span>)] <span style=color:#66d9ef>for</span> word <span style=color:#f92672>in</span> w_c]) <span style=color:#f92672>+</span> len(w_c) <span style=color:#f92672>*</span> np<span style=color:#f92672>.</span>log(np<span style=color:#f92672>.</span>sum(np<span style=color:#f92672>.</span>exp(u)))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        print(<span style=color:#e6db74>f</span><span style=color:#e6db74>&#39;EPOCH: </span><span style=color:#e6db74>{</span>i<span style=color:#e6db74>}</span><span style=color:#e6db74>, LOSS: </span><span style=color:#e6db74>{</span>loss<span style=color:#e6db74>}</span><span style=color:#e6db74>&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> W1, W2
+</span></span></code></pre></div><p>Let&rsquo;s start with a very simple corpus, too see if you probabilities make sense</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>corpus <span style=color:#f92672>=</span> [[<span style=color:#e6db74>&#39;the&#39;</span>,<span style=color:#e6db74>&#39;quick&#39;</span>,<span style=color:#e6db74>&#39;brown&#39;</span>,<span style=color:#e6db74>&#39;fox&#39;</span>,<span style=color:#e6db74>&#39;jumped&#39;</span>,<span style=color:#e6db74>&#39;over&#39;</span>,<span style=color:#e6db74>&#39;the&#39;</span>,<span style=color:#e6db74>&#39;lazy&#39;</span>,<span style=color:#e6db74>&#39;dog&#39;</span>]]
+</span></span><span style=display:flex><span>vocab <span style=color:#f92672>=</span> get_vocab(corpus,[])
+</span></span><span style=display:flex><span>one_hot <span style=color:#f92672>=</span> one_hot_encode(vocab)
+</span></span><span style=display:flex><span>training_data <span style=color:#f92672>=</span> transform_corpus(corpus, one_hot, window<span style=color:#f92672>=</span><span style=color:#ae81ff>2</span>)
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>W1, W2 <span style=color:#f92672>=</span> train(training_data, <span style=color:#ae81ff>5</span>, eta <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.01</span>, epochs<span style=color:#f92672>=</span> <span style=color:#ae81ff>5000</span>)
+</span></span></code></pre></div><pre><code>EPOCH: 0, LOSS: 62.70608789420015
 EPOCH: 1, LOSS: 62.37350155268606
 EPOCH: 2, LOSS: 62.054143476689916
 ...
 EPOCH: 4997, LOSS: 41.05911823870678
 EPOCH: 4998, LOSS: 41.059104040422355
 EPOCH: 4999, LOSS: 41.05908984506421
-</code></pre>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>softmax(np<span style=color:#f92672>.</span>dot(W2, np<span style=color:#f92672>.</span>dot(W1, one_hot[<span style=color:#e6db74>&#39;fox&#39;</span>])))
-</code></pre></div><pre><code>array([8.68846163e-05, 2.46076725e-01, 2.46746438e-01, 3.80171876e-06,
+</code></pre><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>softmax(np<span style=color:#f92672>.</span>dot(W2, np<span style=color:#f92672>.</span>dot(W1, one_hot[<span style=color:#e6db74>&#39;fox&#39;</span>])))
+</span></span></code></pre></div><pre><code>array([8.68846163e-05, 2.46076725e-01, 2.46746438e-01, 3.80171876e-06,
        2.53355432e-01, 2.52973207e-01, 3.06908315e-04, 4.50604009e-04])
-</code></pre>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>softmax(np<span style=color:#f92672>.</span>dot(W2, np<span style=color:#f92672>.</span>dot(W1, one_hot[<span style=color:#e6db74>&#39;the&#39;</span>])))
-</code></pre></div><pre><code>array([1.08782578e-04, 1.60967204e-01, 1.58272813e-01, 9.26069831e-04,
+</code></pre><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>softmax(np<span style=color:#f92672>.</span>dot(W2, np<span style=color:#f92672>.</span>dot(W1, one_hot[<span style=color:#e6db74>&#39;the&#39;</span>])))
+</span></span></code></pre></div><pre><code>array([1.08782578e-04, 1.60967204e-01, 1.58272813e-01, 9.26069831e-04,
        1.65343960e-01, 1.69151033e-01, 1.74932783e-01, 1.70297355e-01])
-</code></pre>
-<h2 id=application-of-the-deep-graph-kernel-in-graph-classification>Application of the deep graph kernel in graph classification</h2>
-<p>Continuing from before we load the data and create our graphs:</p>
-<p>First we generate the feature vectors, corpus and vocabulary and generate their one-hot encodings:</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>prob_map_sp, corpus_sp, label_map_sp <span style=color:#f92672>=</span> ShortestPathSimilarity(GG, <span style=color:#ae81ff>2</span>)
-vocab_sp <span style=color:#f92672>=</span> get_vocab(corpus_sp,[])
-one_hot_sp <span style=color:#f92672>=</span> one_hot_encode(vocab_sp)
-</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>len(vocab_sp)
-</code></pre></div><pre><code>27
-</code></pre>
-<p>Second we create our training data:</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>training_data_sp <span style=color:#f92672>=</span> transform_corpus(corpus_sp, one_hot_sp, window <span style=color:#f92672>=</span> <span style=color:#ae81ff>5</span>)
-</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>W1_sp, W2_wl <span style=color:#f92672>=</span> train(training_data_sp, <span style=color:#ae81ff>35</span>, eta <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.01</span>, epochs<span style=color:#f92672>=</span> <span style=color:#ae81ff>100</span>)
-</code></pre></div><pre><code>EPOCH: 0, LOSS: 374814.73546567373
+</code></pre><h2 id=application-of-the-deep-graph-kernel-in-graph-classification>Application of the deep graph kernel in graph classification</h2><p>Continuing from before we load the data and create our graphs:</p><p>First we generate the feature vectors, corpus and vocabulary and generate their one-hot encodings:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>prob_map_sp, corpus_sp, label_map_sp <span style=color:#f92672>=</span> ShortestPathSimilarity(GG, <span style=color:#ae81ff>2</span>)
+</span></span><span style=display:flex><span>vocab_sp <span style=color:#f92672>=</span> get_vocab(corpus_sp,[])
+</span></span><span style=display:flex><span>one_hot_sp <span style=color:#f92672>=</span> one_hot_encode(vocab_sp)
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>len(vocab_sp)
+</span></span></code></pre></div><pre><code>27
+</code></pre><p>Second we create our training data:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>training_data_sp <span style=color:#f92672>=</span> transform_corpus(corpus_sp, one_hot_sp, window <span style=color:#f92672>=</span> <span style=color:#ae81ff>5</span>)
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>W1_sp, W2_wl <span style=color:#f92672>=</span> train(training_data_sp, <span style=color:#ae81ff>35</span>, eta <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.01</span>, epochs<span style=color:#f92672>=</span> <span style=color:#ae81ff>100</span>)
+</span></span></code></pre></div><pre><code>EPOCH: 0, LOSS: 374814.73546567373
 EPOCH: 1, LOSS: 372198.8859155059
 EPOCH: 2, LOSS: 372248.3620957433
 EPOCH: 3, LOSS: 372257.07566300465
@@ -444,72 +376,63 @@ EPOCH: 96, LOSS: 371991.4138051814
 EPOCH: 97, LOSS: 371991.1381585368
 EPOCH: 98, LOSS: 371990.7799381037
 EPOCH: 99, LOSS: 371990.3349888323
-</code></pre>
-<p>Finally we create our similarity matrix, our feature vectors and the kernel matrix. We will create one with and without the similarity matrix</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>
-M <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>dot(W1_sp<span style=color:#f92672>.</span>T, W1_sp)
-P <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>zeros((len(GG), len(vocab_sp)))
-<span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(len(GG)):
-    <span style=color:#66d9ef>for</span> jdx, j <span style=color:#f92672>in</span> enumerate(vocab_sp):
-        P[i][jdx] <span style=color:#f92672>=</span> prob_map_sp[i]<span style=color:#f92672>.</span>get(j,<span style=color:#ae81ff>0</span>)
-
-K_no_m <span style=color:#f92672>=</span> P<span style=color:#f92672>.</span>dot(P<span style=color:#f92672>.</span>T)
-K_m <span style=color:#f92672>=</span> (P<span style=color:#f92672>.</span>dot(M))<span style=color:#f92672>.</span>dot(P<span style=color:#f92672>.</span>T)
-</code></pre></div><p>With our kernel matrix, we can perform classification:</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#f92672>from</span> sklearn.svm <span style=color:#f92672>import</span> SVC
-<span style=color:#f92672>from</span> sklearn.metrics <span style=color:#f92672>import</span> accuracy_score
-<span style=color:#75715e># Train an SVM classifier and make predictions</span>
-clf <span style=color:#f92672>=</span> SVC(kernel<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;precomputed&#39;</span>, C<span style=color:#f92672>=</span> <span style=color:#ae81ff>50</span>)
-
-clf<span style=color:#f92672>.</span>fit(K_no_m, y_target) 
-y_pred_no_m <span style=color:#f92672>=</span> clf<span style=color:#f92672>.</span>predict(K_no_m)
-
-clf<span style=color:#f92672>.</span>fit(K_m, y_target) 
-y_pred_m <span style=color:#f92672>=</span> clf<span style=color:#f92672>.</span>predict(K_m)
-
-<span style=color:#75715e># Evaluate the predictions</span>
-print(<span style=color:#e6db74>&#34;Accuracy without similarity:&#34;</span>, accuracy_score(y_pred_no_m, y_target))
-print(<span style=color:#e6db74>&#34;Accuracy with similarity:&#34;</span>, accuracy_score(y_pred_m,y_target))
-</code></pre></div><pre><code>Accuracy without similarity: 0.8297872340425532
+</code></pre><p>Finally we create our similarity matrix, our feature vectors and the kernel matrix. We will create one with and without the similarity matrix</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>
+</span></span><span style=display:flex><span>M <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>dot(W1_sp<span style=color:#f92672>.</span>T, W1_sp)
+</span></span><span style=display:flex><span>P <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>zeros((len(GG), len(vocab_sp)))
+</span></span><span style=display:flex><span><span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(len(GG)):
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span> jdx, j <span style=color:#f92672>in</span> enumerate(vocab_sp):
+</span></span><span style=display:flex><span>        P[i][jdx] <span style=color:#f92672>=</span> prob_map_sp[i]<span style=color:#f92672>.</span>get(j,<span style=color:#ae81ff>0</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>K_no_m <span style=color:#f92672>=</span> P<span style=color:#f92672>.</span>dot(P<span style=color:#f92672>.</span>T)
+</span></span><span style=display:flex><span>K_m <span style=color:#f92672>=</span> (P<span style=color:#f92672>.</span>dot(M))<span style=color:#f92672>.</span>dot(P<span style=color:#f92672>.</span>T)
+</span></span></code></pre></div><p>With our kernel matrix, we can perform classification:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#f92672>from</span> sklearn.svm <span style=color:#f92672>import</span> SVC
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> sklearn.metrics <span style=color:#f92672>import</span> accuracy_score
+</span></span><span style=display:flex><span><span style=color:#75715e># Train an SVM classifier and make predictions</span>
+</span></span><span style=display:flex><span>clf <span style=color:#f92672>=</span> SVC(kernel<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;precomputed&#39;</span>, C<span style=color:#f92672>=</span> <span style=color:#ae81ff>50</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>clf<span style=color:#f92672>.</span>fit(K_no_m, y_target) 
+</span></span><span style=display:flex><span>y_pred_no_m <span style=color:#f92672>=</span> clf<span style=color:#f92672>.</span>predict(K_no_m)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>clf<span style=color:#f92672>.</span>fit(K_m, y_target) 
+</span></span><span style=display:flex><span>y_pred_m <span style=color:#f92672>=</span> clf<span style=color:#f92672>.</span>predict(K_m)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># Evaluate the predictions</span>
+</span></span><span style=display:flex><span>print(<span style=color:#e6db74>&#34;Accuracy without similarity:&#34;</span>, accuracy_score(y_pred_no_m, y_target))
+</span></span><span style=display:flex><span>print(<span style=color:#e6db74>&#34;Accuracy with similarity:&#34;</span>, accuracy_score(y_pred_m,y_target))
+</span></span></code></pre></div><pre><code>Accuracy without similarity: 0.8297872340425532
 Accuracy with similarity: 0.8085106382978723
-</code></pre>
-<p>Let&rsquo;s try classification with the Gensim library</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#f92672>from</span> gensim.models <span style=color:#f92672>import</span> Word2Vec
-model <span style=color:#f92672>=</span> Word2Vec(sentences<span style=color:#f92672>=</span>corpus_sp, vector_size<span style=color:#f92672>=</span><span style=color:#ae81ff>35</span>, window<span style=color:#f92672>=</span><span style=color:#ae81ff>5</span>, min_count<span style=color:#f92672>=</span><span style=color:#ae81ff>0</span>, workers<span style=color:#f92672>=</span><span style=color:#ae81ff>4</span>)
-
-</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>M <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>zeros((len(vocab_sp), len(vocab_sp)))
-<span style=color:#66d9ef>for</span> idx, i <span style=color:#f92672>in</span> enumerate(vocab_sp):
-    <span style=color:#66d9ef>for</span> jdx, j <span style=color:#f92672>in</span> enumerate(vocab_sp):
-        M[idx, jdx] <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>dot(model<span style=color:#f92672>.</span>wv[i], model<span style=color:#f92672>.</span>wv[j])
-
-K_m2 <span style=color:#f92672>=</span> (P<span style=color:#f92672>.</span>dot(M))<span style=color:#f92672>.</span>dot(P<span style=color:#f92672>.</span>T)
-clf<span style=color:#f92672>.</span>fit(K_m2, y_target) 
-y_pred_m <span style=color:#f92672>=</span> clf<span style=color:#f92672>.</span>predict(K_m2)
-
-<span style=color:#75715e># Evaluate the predictions</span>
-print(<span style=color:#e6db74>&#34;Accuracy with similarity Gensim:&#34;</span>, accuracy_score(y_pred_m,y_target))
-</code></pre></div><pre><code>Accuracy with similarity Gensim: 0.7287234042553191
-</code></pre>
-<p>The accuracies are very similar and similar to the ones stated in the paper. However the &ldquo;Deep&rdquo; in the deep kernel is not performing as well as a simple bag-of-words. Perhaps, the accuracy could be increases with hyper-parameter tunings, such as window-size, word-embedding dimension or number of epochs.</p>
-<h1 id=improvements>Improvements</h1>
-<p>To improve the word to vec model (for more general embeddings) we could do</p>
-<ul>
-<li>Phrase Generation - For example concatenate co-occuring words such as &ldquo;los&rdquo; and &ldquo;angeles&rdquo; become &ldquo;los_angeles&rdquo;.</li>
-<li>Subsampling - Decrease the portion of a word that is very frequent to balance between rare and frequent words.</li>
-<li>Negative Sampling - Only consider a small percentage of the words in the error term</li>
-</ul>
-<p>During the classification we should do cross-validation to choose hyperparameters</p>
-</div>
-</div>
-</div>
-<div class="layui-col-md4 layui-col-sm12 layui-col-xs12">
+</code></pre><p>Let&rsquo;s try classification with the Gensim library</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#f92672>from</span> gensim.models <span style=color:#f92672>import</span> Word2Vec
+</span></span><span style=display:flex><span>model <span style=color:#f92672>=</span> Word2Vec(sentences<span style=color:#f92672>=</span>corpus_sp, vector_size<span style=color:#f92672>=</span><span style=color:#ae81ff>35</span>, window<span style=color:#f92672>=</span><span style=color:#ae81ff>5</span>, min_count<span style=color:#f92672>=</span><span style=color:#ae81ff>0</span>, workers<span style=color:#f92672>=</span><span style=color:#ae81ff>4</span>)
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>M <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>zeros((len(vocab_sp), len(vocab_sp)))
+</span></span><span style=display:flex><span><span style=color:#66d9ef>for</span> idx, i <span style=color:#f92672>in</span> enumerate(vocab_sp):
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span> jdx, j <span style=color:#f92672>in</span> enumerate(vocab_sp):
+</span></span><span style=display:flex><span>        M[idx, jdx] <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>dot(model<span style=color:#f92672>.</span>wv[i], model<span style=color:#f92672>.</span>wv[j])
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>K_m2 <span style=color:#f92672>=</span> (P<span style=color:#f92672>.</span>dot(M))<span style=color:#f92672>.</span>dot(P<span style=color:#f92672>.</span>T)
+</span></span><span style=display:flex><span>clf<span style=color:#f92672>.</span>fit(K_m2, y_target) 
+</span></span><span style=display:flex><span>y_pred_m <span style=color:#f92672>=</span> clf<span style=color:#f92672>.</span>predict(K_m2)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># Evaluate the predictions</span>
+</span></span><span style=display:flex><span>print(<span style=color:#e6db74>&#34;Accuracy with similarity Gensim:&#34;</span>, accuracy_score(y_pred_m,y_target))
+</span></span></code></pre></div><pre><code>Accuracy with similarity Gensim: 0.7287234042553191
+</code></pre><p>The accuracies are very similar and similar to the ones stated in the paper. However the &ldquo;Deep&rdquo; in the deep kernel is not performing as well as a simple bag-of-words. Perhaps, the accuracy could be increases with hyper-parameter tunings, such as window-size, word-embedding dimension or number of epochs.</p><h1 id=improvements>Improvements</h1><p>To improve the word to vec model (for more general embeddings) we could do</p><ul>
+<li>Phrase Generation - For example concatenate co-occuring words such as &ldquo;los&rdquo; and &ldquo;angeles&rdquo; become &ldquo;los_angeles&rdquo;.</li><li>Subsampling - Decrease the portion of a word that is very frequent to balance between rare and frequent words.</li><li>Negative Sampling - Only consider a small percentage of the words in the error term</li></ul><p>During the classification we should do cross-validation to choose hyperparameters</p></div></div></div><div class="layui-col-md4 layui-col-sm12 layui-col-xs12">
 <div class="layui-card single-card">
-<h2 class=single-title>Recent Posts</h2>
-<div style=margin-left:10px>
+<h2 class=single-title>Recent Posts</h2><div style=margin-left:10px>
+<blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
+<a href=/post/glm/>
+<h3>Generalized Lienar Models</h3></a>
+<h3 style=margin-top:10px;margin-bottom:10px>
+<i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<span>2022-03-02</span>
+<i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
+<a href=/tags/model/>
+<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Model</span>
+</a>
+</h3></blockquote></div><div style=margin-left:10px>
 <blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
 <a href=/post/hmm/>
-<h3>Hidden Markov Models</h3>
-</a>
+<h3>Hidden Markov Models</h3></a>
 <h3 style=margin-top:10px;margin-bottom:10px>
 <i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
 <span>2022-02-15</span>
@@ -520,14 +443,10 @@ print(<span style=color:#e6db74>&#34;Accuracy with similarity Gensim:&#34;</span
 <a href=/tags/classification/>
 <span class="layui-badge layui-bg-orange" style=vertical-align:2px>Classification</span>
 </a>
-</h3>
-</blockquote>
-</div>
-<div style=margin-left:10px>
+</h3></blockquote></div><div style=margin-left:10px>
 <blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
 <a href=/post/extremes/>
-<h3>Quntitative Risk Analysis</h3>
-</a>
+<h3>Quntitative Risk Analysis</h3></a>
 <h3 style=margin-top:10px;margin-bottom:10px>
 <i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
 <span>2021-11-17</span>
@@ -538,14 +457,10 @@ print(<span style=color:#e6db74>&#34;Accuracy with similarity Gensim:&#34;</span
 <a href=/tags/extremes/>
 <span class="layui-badge layui-bg-orange" style=vertical-align:2px>Extremes</span>
 </a>
-</h3>
-</blockquote>
-</div>
-<div style=margin-left:10px>
+</h3></blockquote></div><div style=margin-left:10px>
 <blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
 <a href=/post/deepkernel/>
-<h3>Deep Graph Kernels</h3>
-</a>
+<h3>Deep Graph Kernels</h3></a>
 <h3 style=margin-top:10px;margin-bottom:10px>
 <i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
 <span>2021-11-16</span>
@@ -559,14 +474,10 @@ print(<span style=color:#e6db74>&#34;Accuracy with similarity Gensim:&#34;</span
 <a href=/tags/kernel/>
 <span class="layui-badge layui-bg-orange" style=vertical-align:2px>Kernel</span>
 </a>
-</h3>
-</blockquote>
-</div>
-<div style=margin-left:10px>
+</h3></blockquote></div><div style=margin-left:10px>
 <blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
 <a href=/post/correlationnetwork/>
-<h3>Group Identification in Stock Markets</h3>
-</a>
+<h3>Group Identification in Stock Markets</h3></a>
 <h3 style=margin-top:10px;margin-bottom:10px>
 <i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
 <span>2021-09-16</span>
@@ -574,36 +485,7 @@ print(<span style=color:#e6db74>&#34;Accuracy with similarity Gensim:&#34;</span
 <a href=/tags/risk/>
 <span class="layui-badge layui-bg-orange" style=vertical-align:2px>Risk</span>
 </a>
-</h3>
-</blockquote>
-</div>
-<div style=margin-left:10px>
-<blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
-<a href=/post/data_visualization/>
-<h3>Data Visualization and Data Reduction</h3>
-</a>
-<h3 style=margin-top:10px;margin-bottom:10px>
-<i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
-<span>2021-08-30</span>
-<i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
-<a href=/tags/visualization/>
-<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Visualization</span>
-</a>
-<a href=/tags/data-analysis/>
-<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Data Analysis</span>
-</a>
-</h3>
-</blockquote>
-</div>
-<br>
-</div>
-</div>
-</div>
-</div>
-</div><footer>
+</h3></blockquote></div><br>
+</div></div></div></div></div><footer>
 <div class=layui-container>
-<p class=copyright>&copy; All rights reserved. Powered by <a href=https://gohugo.io style=color:#fff>Hugo</a>, <a href=https://github.com/ertuil/erblog style=color:#fff>Erblog</a> and <a href=https://github.com/vlunot/nb2hugo style=color:#fff>nb2hugo</a>.</p>
-</div>
-</footer>
-</body>
-</html>
+<p class=copyright>&copy; All rights reserved. Powered by <a href=https://gohugo.io style=color:#fff>Hugo</a>, <a href=https://github.com/ertuil/erblog style=color:#fff>Erblog</a> and <a href=https://github.com/vlunot/nb2hugo style=color:#fff>nb2hugo</a>.</p></div></footer></body></html>

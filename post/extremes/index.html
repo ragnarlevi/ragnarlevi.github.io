@@ -2,8 +2,7 @@
 <head>
 <meta charset=utf-8>
 <meta name=viewport content="width=device-width,initial-scale=1">
-<title>Ragnar - Quntitative Risk Analysis </title>
-<meta content="Risk,Extremes" name=keywords>
+<title>Ragnar - Quntitative Risk Analysis </title><meta content="Risk,Extremes" name=keywords>
 <meta content="Ragnar - In this notebook I will discuss the basic ideas of modelling quantiles and copula dependence. These ideas are important for risk managers as International banking regulations require banks to pay specific attention to the probability of large losses over short periods of time and undeerestimation of dependence among extreme risks can lead to serious consequences, as for instance those we experienced during the last financial crisis. Including extreme risks in probabilistic models is recognized nowadays as a necessary condition for good risk management in any institution, and not restricted anymore to reinsurance companies, who are the providers of covers for natural catastrophes." name=description>
 <meta name=viewport content="width=device-width,initial-scale=1">
 <script type=text/x-mathjax-config>
@@ -26,27 +25,18 @@
 <link rel=stylesheet async href=/self/css/gallery.css>
 <script src=https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin=anonymous></script>
 <link rel=stylesheet href=https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css integrity="sha256-eZrrJcwDc/3uDhsdt61sL2oOBY362qM3lon1gyExkL0=" crossorigin=anonymous>
-<script async src=https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js integrity="sha256-h2tMEmhemR2IN4wbbdNjj9LaDIjzwk2hralQwfJmBOE=" crossorigin=anonymous></script></head>
-<body>
+<script async src=https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js integrity="sha256-h2tMEmhemR2IN4wbbdNjj9LaDIjzwk2hralQwfJmBOE=" crossorigin=anonymous></script></head><body>
 <header class="layui-header layui-bg-cyan">
 <a class=nav-self-logo href=/>
 Ragnar
 </a>
 <ul class="layui-nav layui-layout-right layui-bg-cyan" lay-filter>
-<li class=layui-nav-item id=nav_big><a href=/post/>Posts</a></li>
-<li class=layui-nav-item id=nav_big><a href=/about/>About</a></li>
-<li class=layui-nav-item id=nav_small>
+<li class=layui-nav-item id=nav_big><a href=/post/>Posts</a></li><li class=layui-nav-item id=nav_big><a href=/about/>About</a></li><li class=layui-nav-item id=nav_small>
 <a href=javascript:;>
 <i class="layui-icon layui-icon-app" style=font-size:24px></i>
 </a>
 <dl class=layui-nav-child>
-<dd><a href=/post/>Posts</a></dd>
-<dd><a href=/about/>About</a></dd>
-</dl>
-</li>
-</ul>
-</header>
-<script>layui.use('element',function(){var a=layui.element})</script>
+<dd><a href=/post/>Posts</a></dd><dd><a href=/about/>About</a></dd></dl></li></ul></header><script>layui.use("element",function(){var e=layui.element})</script>
 <div id=content style=min-height:80%>
 <div class=layui-container style=margin-bottom:10px>
 <div class="layui-row layui-col-space10">
@@ -54,8 +44,7 @@ Ragnar
 <div class="layui-card single-card">
 <br>
 <blockquote class="self-elem-quote self-elem-quote-bg-red markdown-body single-title">
-<h1>Quntitative Risk Analysis</h1>
-<h3 style=margin-top:10px;margin-bottom:10px>
+<h1>Quntitative Risk Analysis</h1><h3 style=margin-top:10px;margin-bottom:10px>
 <i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
 <span>2021-11-17</span>
 <i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
@@ -65,269 +54,211 @@ Ragnar
 <a href=/tags/extremes/>
 <span class="layui-badge layui-bg-orange" style=vertical-align:2px>Extremes</span>
 </a>
-</h3>
-</blockquote>
-<div class="layui-card-body markdown-body single-content">
-<p>In this notebook I will discuss the basic ideas of modelling quantiles and copula dependence. These ideas are important for risk managers as International banking regulations require banks to pay specific attention to the probability of large losses over short periods of time and undeerestimation of dependence among extreme risks can lead to serious consequences, as for instance those we experienced during the last financial crisis. Including extreme risks in probabilistic models is recognized nowadays as a necessary condition for good risk management in any institution, and not restricted anymore to reinsurance companies, who are the providers of covers for natural catastrophes. One of the main problems that come up is the fact that the observed data usually only includes few extreme obervations and the never exceed the maximum historical observation, meaning we only have a truncated version of the &ldquo;real&rdquo; distribution. This makes simulation of extreme values problematic. For a more detailed overview see <a href=https://www.econbiz.de/Record/an-application-of-extreme-value-theory-for-measuring-financial-risk-gilli-manfred/10005701798>Gilli</a> or <a href=https://link.springer.com/chapter/10.1007/978-3-030-04161-8_51>Kratz</a></p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#f92672>import</span> numpy <span style=color:#66d9ef>as</span> np
-<span style=color:#f92672>import</span> requests
-<span style=color:#f92672>import</span> pandas <span style=color:#66d9ef>as</span> pd
-<span style=color:#f92672>import</span> matplotlib.pyplot <span style=color:#66d9ef>as</span> plt
-<span style=color:#f92672>from</span> scipy.stats <span style=color:#f92672>import</span> norm, t, kurtosis, skew, nct, beta, pareto, expon, genpareto, kendalltau
-<span style=color:#f92672>from</span> scipy.optimize <span style=color:#f92672>import</span> minimize, brentq
-<span style=color:#f92672>from</span> statsmodels.distributions.empirical_distribution <span style=color:#f92672>import</span> ECDF
-</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>headers <span style=color:#f92672>=</span> {<span style=color:#e6db74>&#39;User-Agent&#39;</span>: <span style=color:#e6db74>&#39;Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36&#39;</span>}
-url_esg <span style=color:#f92672>=</span> <span style=color:#e6db74>f</span><span style=color:#e6db74>&#34;https://query1.finance.yahoo.com/v7/finance/spark?symbols=^GSPC&amp;range=10y&amp;interval=1d&amp;indicators=close&amp;includeTimestamps=false&amp;includePrePost=false&amp;corsDomain=finance.yahoo.com&amp;.tsrc=finance&#34;</span>
-response <span style=color:#f92672>=</span> requests<span style=color:#f92672>.</span>get(url_esg, headers<span style=color:#f92672>=</span>headers)
-</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>get_index</span>(tick):
-    <span style=color:#e6db74>&#34;&#34;&#34;
-</span><span style=color:#e6db74>    Function that takes the sp500 index from yahoo
-</span><span style=color:#e6db74>    &#34;&#34;&#34;</span>
-    
-    headers <span style=color:#f92672>=</span> {<span style=color:#e6db74>&#39;User-Agent&#39;</span>: <span style=color:#e6db74>&#39;Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36&#39;</span>}
-    <span style=color:#75715e># ESG historical data (only changes yearly)</span>
-    url_esg <span style=color:#f92672>=</span> <span style=color:#e6db74>f</span><span style=color:#e6db74>&#34;https://query1.finance.yahoo.com/v7/finance/spark?symbols=</span><span style=color:#e6db74>{</span>tick<span style=color:#e6db74>}</span><span style=color:#e6db74>&amp;range=10y&amp;interval=1d&amp;indicators=close&amp;includeTimestamps=false&amp;includePrePost=false&amp;corsDomain=finance.yahoo.com&amp;.tsrc=finance&#34;</span>
-    response <span style=color:#f92672>=</span> requests<span style=color:#f92672>.</span>get(url_esg, headers<span style=color:#f92672>=</span>headers)
-    <span style=color:#66d9ef>if</span> response<span style=color:#f92672>.</span>ok:
-        sp500 <span style=color:#f92672>=</span> pd<span style=color:#f92672>.</span>DataFrame({<span style=color:#e6db74>&#39;date&#39;</span>:pd<span style=color:#f92672>.</span>to_datetime(response<span style=color:#f92672>.</span>json()[<span style=color:#e6db74>&#39;spark&#39;</span>][<span style=color:#e6db74>&#39;result&#39;</span>][<span style=color:#ae81ff>0</span>][<span style=color:#e6db74>&#39;response&#39;</span>][<span style=color:#ae81ff>0</span>][<span style=color:#e6db74>&#39;timestamp&#39;</span>], unit<span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;s&#39;</span>),
-                              <span style=color:#e6db74>&#39;price&#39;</span>:response<span style=color:#f92672>.</span>json()[<span style=color:#e6db74>&#39;spark&#39;</span>][<span style=color:#e6db74>&#39;result&#39;</span>][<span style=color:#ae81ff>0</span>][<span style=color:#e6db74>&#39;response&#39;</span>][<span style=color:#ae81ff>0</span>][<span style=color:#e6db74>&#39;indicators&#39;</span>][<span style=color:#e6db74>&#39;quote&#39;</span>][<span style=color:#ae81ff>0</span>][<span style=color:#e6db74>&#39;close&#39;</span>]})
-    
-    <span style=color:#66d9ef>else</span>:
-        print(<span style=color:#e6db74>&#34;Empty data frame&#34;</span>)
-        sp500 <span style=color:#f92672>=</span> pd<span style=color:#f92672>.</span>DataFrame()
-
-
-
-    <span style=color:#66d9ef>return</span> sp500
-</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>sp500 <span style=color:#f92672>=</span> get_index(<span style=color:#e6db74>&#39;^GSPC&#39;</span>)
-nasdaq <span style=color:#f92672>=</span> get_index(<span style=color:#e6db74>&#39;^IXIC&#39;</span>)
-</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>plt<span style=color:#f92672>.</span>figure(figsize<span style=color:#f92672>=</span>(<span style=color:#ae81ff>5</span>,<span style=color:#ae81ff>5</span>))
-plt<span style=color:#f92672>.</span>plot(sp500[<span style=color:#e6db74>&#39;date&#39;</span>], sp500[<span style=color:#e6db74>&#39;price&#39;</span>])
-</code></pre></div><pre><code>[&lt;matplotlib.lines.Line2D at 0x286fa8c8fa0&gt;]
-</code></pre>
-<p><img src=extremes_5_1.png alt=png></p>
-<p>Let&rsquo;s plot the daily log-returns</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>] <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>log(sp500[<span style=color:#e6db74>&#39;price&#39;</span>])<span style=color:#f92672>.</span>diff()
-sp500 <span style=color:#f92672>=</span> sp500<span style=color:#f92672>.</span>iloc[:,:]<span style=color:#f92672>.</span>dropna(axis<span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>)
-
-nasdaq[<span style=color:#e6db74>&#39;log_return&#39;</span>] <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>log(nasdaq[<span style=color:#e6db74>&#39;price&#39;</span>])<span style=color:#f92672>.</span>diff()
-nasdaq <span style=color:#f92672>=</span> nasdaq<span style=color:#f92672>.</span>iloc[:,:]<span style=color:#f92672>.</span>dropna(axis<span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>)
-</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>fig, ax <span style=color:#f92672>=</span> plt<span style=color:#f92672>.</span>subplots(<span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>2</span>, figsize<span style=color:#f92672>=</span>(<span style=color:#ae81ff>10</span>,<span style=color:#ae81ff>5</span>))
-
-ax[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>.</span>plot(sp500[<span style=color:#e6db74>&#39;date&#39;</span>], sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>])
-ax[<span style=color:#ae81ff>1</span>]<span style=color:#f92672>.</span>plot(nasdaq[<span style=color:#e6db74>&#39;date&#39;</span>], nasdaq[<span style=color:#e6db74>&#39;log_return&#39;</span>])
-</code></pre></div><p><img src=extremes_8_1.png alt=png></p>
-<h1 id=extremes>Extremes</h1>
-<p>Let&rsquo;s plot the histogram and try different probability distributions.</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>mu_normal <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>mean(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>])
-var_normal <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>mean((sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]<span style=color:#f92672>-</span>mu_normal) <span style=color:#f92672>**</span> <span style=color:#ae81ff>2</span>)
-normal_fit <span style=color:#f92672>=</span> norm<span style=color:#f92672>.</span>pdf(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), mu_normal, np<span style=color:#f92672>.</span>sqrt(var_normal))
-</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>mu_normal
-</code></pre></div><pre><code>0.0005225186337781287
-</code></pre>
-<h2 id=a-normal-distribution>A normal distribution</h2>
-<p>For the normal distribution we simply use the well known maximum likelihood estimators for parameters.</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>
-</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>bins <span style=color:#f92672>=</span> plt<span style=color:#f92672>.</span>hist(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>], bins <span style=color:#f92672>=</span> <span style=color:#ae81ff>100</span>, density<span style=color:#f92672>=</span><span style=color:#66d9ef>True</span>)
-plt<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]),normal_fit)
-</code></pre></div><p><img src=extremes_15_1.png alt=png></p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>fig, ax <span style=color:#f92672>=</span> plt<span style=color:#f92672>.</span>subplots()
-ax<span style=color:#f92672>.</span>plot([<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>1</span>], [<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>1</span>], color <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;black&#39;</span>)
-ax<span style=color:#f92672>.</span>scatter(norm<span style=color:#f92672>.</span>ppf(np<span style=color:#f92672>.</span>array(range(sp500<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>]))<span style=color:#f92672>/</span>sp500<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>], mu_normal, np<span style=color:#f92672>.</span>sqrt(var_normal)),sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]))
-ax<span style=color:#f92672>.</span>set_xlim([<span style=color:#f92672>-</span><span style=color:#ae81ff>0.04</span>, <span style=color:#ae81ff>0.04</span>])
-ax<span style=color:#f92672>.</span>set_ylim([<span style=color:#f92672>-</span><span style=color:#ae81ff>0.1</span>, <span style=color:#ae81ff>0.1</span>])
-
-</code></pre></div><p><img src=extremes_16_1.png alt=png></p>
-<h2 id=a-student-t-distribution>A student t distribution</h2>
-<p>$$ r_t = m + sx_t$$</p>
-<p>where $x_t$ is the standard t random variable. We can fit by a method of moments</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>m <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>mean(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>])
-v <span style=color:#f92672>=</span> (<span style=color:#ae81ff>4</span><span style=color:#f92672>*</span>kurtosis(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]) <span style=color:#f92672>-</span> <span style=color:#ae81ff>6</span>)<span style=color:#f92672>/</span>(kurtosis(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>])<span style=color:#f92672>-</span><span style=color:#ae81ff>3</span>)
-s <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>sqrt( (np<span style=color:#f92672>.</span>std(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]) <span style=color:#f92672>**</span> <span style=color:#ae81ff>2</span>)<span style=color:#f92672>*</span> (v<span style=color:#f92672>-</span><span style=color:#ae81ff>2</span>) <span style=color:#f92672>/</span> v)
-
-t_fit <span style=color:#f92672>=</span> t<span style=color:#f92672>.</span>pdf(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), df <span style=color:#f92672>=</span> v, loc <span style=color:#f92672>=</span> m, scale <span style=color:#f92672>=</span> s)
-</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>bins <span style=color:#f92672>=</span> plt<span style=color:#f92672>.</span>hist(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>], bins <span style=color:#f92672>=</span> <span style=color:#ae81ff>100</span>, density<span style=color:#f92672>=</span><span style=color:#66d9ef>True</span>, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;empirical&#39;</span>)
-plt<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]),t_fit, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;t-dist&#39;</span>)
-plt<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]),normal_fit, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;norm-dist&#39;</span>)
-plt<span style=color:#f92672>.</span>legend()
-</code></pre></div><p><img src=extremes_19_1.png alt=png></p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>fig, ax <span style=color:#f92672>=</span> plt<span style=color:#f92672>.</span>subplots()
-ax<span style=color:#f92672>.</span>plot([<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>1</span>], [<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>1</span>], color <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;black&#39;</span>)
-ax<span style=color:#f92672>.</span>scatter(t<span style=color:#f92672>.</span>ppf(np<span style=color:#f92672>.</span>array(range(sp500<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>]))<span style=color:#f92672>/</span>sp500<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>], df <span style=color:#f92672>=</span> v, loc <span style=color:#f92672>=</span> m, scale <span style=color:#f92672>=</span> s),sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]))
-ax<span style=color:#f92672>.</span>set_xlim([<span style=color:#f92672>-</span><span style=color:#ae81ff>0.1</span>, <span style=color:#ae81ff>0.1</span>])
-ax<span style=color:#f92672>.</span>set_ylim([<span style=color:#f92672>-</span><span style=color:#ae81ff>0.1</span>, <span style=color:#ae81ff>0.1</span>])
-</code></pre></div><p><img src=extremes_20_1.png alt=png></p>
-<h2 id=non-central-t-distribution>non-central-t-distribution</h2>
-<p>The skewness of the sp500 data is</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>skew(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>])
-</code></pre></div><pre><code>-0.9309407317689141
-</code></pre>
-<p>Thus, it is natural to consider a distribution that is not symmetric. We have to run a optimization algorithm</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>params <span style=color:#f92672>=</span> nct<span style=color:#f92672>.</span>fit(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>], floc <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>)
-nct_fit <span style=color:#f92672>=</span> nct<span style=color:#f92672>.</span>pdf(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), df <span style=color:#f92672>=</span> params[<span style=color:#ae81ff>0</span>], nc <span style=color:#f92672>=</span> params[<span style=color:#ae81ff>1</span>], loc <span style=color:#f92672>=</span> params[<span style=color:#ae81ff>2</span>], scale <span style=color:#f92672>=</span> params[<span style=color:#ae81ff>3</span>])
-</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>bins <span style=color:#f92672>=</span> plt<span style=color:#f92672>.</span>hist(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>], bins <span style=color:#f92672>=</span> <span style=color:#ae81ff>100</span>, density<span style=color:#f92672>=</span><span style=color:#66d9ef>True</span>, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;empirical&#39;</span>)
-plt<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]),t_fit, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;t-dist&#39;</span>)
-plt<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]),normal_fit, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;normal&#39;</span>)
-plt<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]),nct_fit, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;nct&#39;</span>)
-plt<span style=color:#f92672>.</span>legend()
-</code></pre></div><p><img src=extremes_25_1.png alt=png></p>
-<p>So the fit seems to be good. Let&rsquo;s inspect the tails.</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>empirical_cdf <span style=color:#f92672>=</span> ECDF(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]))
-normal_cdf <span style=color:#f92672>=</span> norm<span style=color:#f92672>.</span>cdf(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), mu_normal, np<span style=color:#f92672>.</span>sqrt(var_normal))
-t_cdf <span style=color:#f92672>=</span> t<span style=color:#f92672>.</span>cdf(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), df <span style=color:#f92672>=</span> v, loc <span style=color:#f92672>=</span> m, scale <span style=color:#f92672>=</span> s)
-nct_cdf <span style=color:#f92672>=</span> nct<span style=color:#f92672>.</span>cdf(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), df <span style=color:#f92672>=</span> params[<span style=color:#ae81ff>0</span>], nc <span style=color:#f92672>=</span> params[<span style=color:#ae81ff>1</span>], loc <span style=color:#f92672>=</span> params[<span style=color:#ae81ff>2</span>], scale <span style=color:#f92672>=</span> params[<span style=color:#ae81ff>3</span>])
-</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>fig, ax <span style=color:#f92672>=</span> plt<span style=color:#f92672>.</span>subplots(figsize <span style=color:#f92672>=</span> (<span style=color:#ae81ff>10</span>,<span style=color:#ae81ff>5</span>))
-ax<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), empirical_cdf(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>])), label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;empirical&#39;</span>)
-ax<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), normal_cdf, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;normal&#39;</span>)
-plt<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), t_cdf, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;t-dist&#39;</span>)
-plt<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), nct_cdf, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;nct&#39;</span>)
-plt<span style=color:#f92672>.</span>legend()
-plt<span style=color:#f92672>.</span>xlim([<span style=color:#f92672>-</span><span style=color:#ae81ff>0.05</span>, <span style=color:#ae81ff>0.06</span>])
-</code></pre></div><p><img src=extremes_28_1.png alt=png></p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>fig, ax <span style=color:#f92672>=</span> plt<span style=color:#f92672>.</span>subplots(<span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>2</span>, figsize <span style=color:#f92672>=</span> (<span style=color:#ae81ff>15</span>,<span style=color:#ae81ff>5</span>))
-
-ax[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), empirical_cdf(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>])), label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;empirical&#39;</span>)
-ax[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), normal_cdf, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;normal&#39;</span>)
-ax[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), t_cdf, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;t-dist&#39;</span>)
-ax[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), nct_cdf, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;nct&#39;</span>)
-ax[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>.</span>legend()
-ax[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>.</span>set_ylim([<span style=color:#ae81ff>0.95</span>, <span style=color:#ae81ff>1</span>])
-ax[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>.</span>set_xlim([<span style=color:#ae81ff>0</span>, <span style=color:#ae81ff>0.1</span>])
-
-ax[<span style=color:#ae81ff>1</span>]<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), empirical_cdf(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>])), label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;empirical&#39;</span>)
-ax[<span style=color:#ae81ff>1</span>]<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), normal_cdf, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;normal&#39;</span>)
-ax[<span style=color:#ae81ff>1</span>]<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), t_cdf, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;t-dist&#39;</span>)
-ax[<span style=color:#ae81ff>1</span>]<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), nct_cdf, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;nct&#39;</span>)
-ax[<span style=color:#ae81ff>1</span>]<span style=color:#f92672>.</span>legend()
-ax[<span style=color:#ae81ff>1</span>]<span style=color:#f92672>.</span>set_ylim([<span style=color:#ae81ff>0.99</span>, <span style=color:#ae81ff>1</span>])
-ax[<span style=color:#ae81ff>1</span>]<span style=color:#f92672>.</span>set_xlim([<span style=color:#ae81ff>0</span>, <span style=color:#ae81ff>0.1</span>])
-</code></pre></div><p><img src=extremes_29_1.png alt=png></p>
-<p>The nct seems to fit the center part the best, while the t-distribution seems to fit the tail the best.</p>
-<h2 id=order-statistics-of-the-empirical-distribution>Order Statistics of the empirical distribution</h2>
-<p>Let&rsquo;s compare the case when we calculate the quantiles from the observed data vs the theoretical quantile. We will assume that the data comes from a t distribution with 4 degrees of freedom. We calculate the quantiles using our 1000 observations and compare it to the theoretical quantile. We repeat this experiment 1000 times to get a feeling of the variability of our quantile estimate from the observations.</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>pv <span style=color:#f92672>=</span> [<span style=color:#ae81ff>0.0001</span>,<span style=color:#ae81ff>0.001</span>,<span style=color:#ae81ff>0.01</span>,<span style=color:#ae81ff>0.05</span>,<span style=color:#ae81ff>0.2</span>,<span style=color:#ae81ff>0.5</span>,<span style=color:#ae81ff>0.8</span>,<span style=color:#ae81ff>0.95</span>,<span style=color:#ae81ff>0.99</span>,<span style=color:#ae81ff>0.999</span>,<span style=color:#ae81ff>0.9999</span>]
-simulate_quantile <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>zeros((len(pv), <span style=color:#ae81ff>1000</span>))
-theoretical_quantile <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>zeros((len(pv), <span style=color:#ae81ff>1000</span>))
-
-<span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(<span style=color:#ae81ff>1000</span>):
-    simulate_quantile[:,i] <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>quantile(t<span style=color:#f92672>.</span>rvs(df <span style=color:#f92672>=</span><span style=color:#ae81ff>4</span>, size <span style=color:#f92672>=</span> <span style=color:#ae81ff>1000</span>), pv)
-    theoretical_quantile[:, i] <span style=color:#f92672>=</span> t<span style=color:#f92672>.</span>ppf(pv, df <span style=color:#f92672>=</span> <span style=color:#ae81ff>4</span>)
-    
-</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>
-<span style=color:#66d9ef>for</span> j, _ <span style=color:#f92672>in</span> enumerate(pv):
-    plt<span style=color:#f92672>.</span>plot(theoretical_quantile[j,:], simulate_quantile[j, :], color <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;black&#39;</span>)
-
-plt<span style=color:#f92672>.</span>plot([<span style=color:#f92672>-</span><span style=color:#ae81ff>20</span>, <span style=color:#ae81ff>20</span>],[<span style=color:#f92672>-</span><span style=color:#ae81ff>20</span>, <span style=color:#ae81ff>20</span>])
-plt<span style=color:#f92672>.</span>xlabel(<span style=color:#e6db74>&#39;Theoretical Quantiles&#39;</span>)
-plt<span style=color:#f92672>.</span>ylabel(<span style=color:#e6db74>&#39;Simulated Quantiles&#39;</span>)
-</code></pre></div><p><img src=extremes_34_1.png alt=png></p>
-<p>We see that the non-center simulated quantiles have much higher variability. This examples shows that the tail quantiles of the empirical distribution
-are inaccurate predictors of the true quantiles. Thus, when calculating tail quantiles, such as VaR, one has to fit a distribution to the data, rather then estimating the quantiles from the observed data.</p>
-<p>The usual approach is to use the empirical distribution in the main body of the data between the 5% and 95% quantiles), while fitting a heavy tail distribution to the tails, for example the pareto distribution.</p>
-<h1 id=estimating-the-tail-losses>Estimating the Tail losses</h1>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>q05
-</code></pre></div><pre><code>-0.01545860011031408
-</code></pre>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>q05 <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>quantile(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>], <span style=color:#ae81ff>0.05</span>)  <span style=color:#75715e># 5% quantile</span>
-losses <span style=color:#f92672>=</span> <span style=color:#f92672>-</span> sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]<span style=color:#f92672>.</span>loc[sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>] <span style=color:#f92672>&lt;</span> q05] <span style=color:#f92672>+</span>q05
-params <span style=color:#f92672>=</span>  expon<span style=color:#f92672>.</span>fit(losses, loc <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>, scale <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>)
-params_t <span style=color:#f92672>=</span> t<span style=color:#f92672>.</span>fit(losses, loc <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>)
-</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>
-</code></pre></div><pre><code>(1.6520658512964799, 0.005612857735874041, 0.004692617830430222)
-</code></pre>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>plt<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]<span style=color:#f92672>.</span>loc[sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>] <span style=color:#f92672>&lt;</span> q05]), empirical_cdf(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]<span style=color:#f92672>.</span>loc[sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>] <span style=color:#f92672>&lt;</span> q05])))
-</code></pre></div><p><img src=extremes_40_1.png alt=png></p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>expon_tail_cdf <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.05</span><span style=color:#f92672>*</span>np<span style=color:#f92672>.</span>sort((<span style=color:#ae81ff>1</span><span style=color:#f92672>-</span>expon<span style=color:#f92672>.</span>cdf(losses, loc <span style=color:#f92672>=</span> params[<span style=color:#ae81ff>0</span>], scale <span style=color:#f92672>=</span> params[<span style=color:#ae81ff>1</span>])))
-t_tail_cdf <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.05</span><span style=color:#f92672>*</span>np<span style=color:#f92672>.</span>sort(<span style=color:#ae81ff>1</span><span style=color:#f92672>-</span>t<span style=color:#f92672>.</span>cdf(losses,df <span style=color:#f92672>=</span> params_t[<span style=color:#ae81ff>0</span>], loc <span style=color:#f92672>=</span> params_t[<span style=color:#ae81ff>1</span>], scale <span style=color:#f92672>=</span> params_t[<span style=color:#ae81ff>2</span>]))
-
-
-fig, ax <span style=color:#f92672>=</span> plt<span style=color:#f92672>.</span>subplots(<span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>1</span>, figsize <span style=color:#f92672>=</span> (<span style=color:#ae81ff>15</span>,<span style=color:#ae81ff>5</span>))
-ax<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), empirical_cdf(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>])), label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;empirical&#39;</span>)
-ax<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]<span style=color:#f92672>.</span>loc[sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>] <span style=color:#f92672>&lt;</span> q05]), expon_tail_cdf, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;expon_tail_cdf&#39;</span>)
-ax<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]<span style=color:#f92672>.</span>loc[sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>] <span style=color:#f92672>&lt;</span> q05]), t_tail_cdf, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;t_tail_cdf&#39;</span>)
-ax<span style=color:#f92672>.</span>legend()
-ax<span style=color:#f92672>.</span>set_ylim([<span style=color:#ae81ff>0.0</span>, <span style=color:#ae81ff>0.05</span>])
-ax<span style=color:#f92672>.</span>set_xlim([<span style=color:#f92672>-</span><span style=color:#ae81ff>0.15</span>, <span style=color:#ae81ff>0.0</span>])
-</code></pre></div><p><img src=extremes_42_1.png alt=png></p>
-<h1 id=threshold-exceedances>Threshold exceedances</h1>
-<p>What is the distribution of \(X(t)\) given \(X(t)\) exceeds some high threshold (for example, its 0.99 quantile)? The generalized Pareto Distribution has been shown to model the tail distribution given that the threshold is large enough GIVEN that the maximum can be modelled by a General extreme value distribution, which most distributions considered have.</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>q05 <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>quantile(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>], <span style=color:#ae81ff>0.05</span>)  <span style=color:#75715e># 5% quantile</span>
-losses <span style=color:#f92672>=</span> <span style=color:#f92672>-</span> sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]<span style=color:#f92672>.</span>loc[sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>] <span style=color:#f92672>&lt;</span> q05] <span style=color:#f92672>+</span>q05
-params_genpareto <span style=color:#f92672>=</span> genpareto<span style=color:#f92672>.</span>fit(losses, loc <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>)
-params_genpareto
-</code></pre></div><pre><code>(0.43767003369774377, 3.0926415630468514e-05, 0.0067057240009978335)
-</code></pre>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>genpareto_tail_pdf <span style=color:#f92672>=</span> genpareto<span style=color:#f92672>.</span>pdf(sorted(losses), params_genpareto[<span style=color:#ae81ff>0</span>], params_genpareto[<span style=color:#ae81ff>1</span>], params_genpareto[<span style=color:#ae81ff>2</span>])
-genpareto_tail_cdf <span style=color:#f92672>=</span> genpareto<span style=color:#f92672>.</span>cdf(sorted(losses), params_genpareto[<span style=color:#ae81ff>0</span>], params_genpareto[<span style=color:#ae81ff>1</span>], params_genpareto[<span style=color:#ae81ff>2</span>])
-genpareto_tail_cdf <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.05</span><span style=color:#f92672>*</span>np<span style=color:#f92672>.</span>sort(<span style=color:#ae81ff>1</span><span style=color:#f92672>-</span>genpareto_tail_cdf)
-
-fig, ax <span style=color:#f92672>=</span> plt<span style=color:#f92672>.</span>subplots(<span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>1</span>, figsize <span style=color:#f92672>=</span> (<span style=color:#ae81ff>15</span>,<span style=color:#ae81ff>5</span>))
-ax<span style=color:#f92672>.</span>hist(losses, density<span style=color:#f92672>=</span><span style=color:#66d9ef>True</span>, bins <span style=color:#f92672>=</span> <span style=color:#ae81ff>80</span>)
-ax<span style=color:#f92672>.</span>plot(sorted(losses), genpareto_tail_pdf)
-</code></pre></div><p><img src=extremes_47_1.png alt=png></p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>fig, ax <span style=color:#f92672>=</span> plt<span style=color:#f92672>.</span>subplots(<span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>1</span>, figsize <span style=color:#f92672>=</span> (<span style=color:#ae81ff>15</span>,<span style=color:#ae81ff>5</span>))
-ax<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), empirical_cdf(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>])), label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;empirical&#39;</span>)
-ax<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]<span style=color:#f92672>.</span>loc[sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>] <span style=color:#f92672>&lt;</span> q05]), genpareto_tail_cdf, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;expon_tail_cdf&#39;</span>)
-ax<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]<span style=color:#f92672>.</span>loc[sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>] <span style=color:#f92672>&lt;</span> q05]), t_tail_cdf, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;t_tail_cdf&#39;</span>)
-ax<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]<span style=color:#f92672>.</span>loc[sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>] <span style=color:#f92672>&lt;</span> q05]), genpareto_tail_cdf, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;genpareto_cdf&#39;</span>)
-ax<span style=color:#f92672>.</span>legend()
-ax<span style=color:#f92672>.</span>set_ylim([<span style=color:#ae81ff>0.0</span>, <span style=color:#ae81ff>0.05</span>])
-ax<span style=color:#f92672>.</span>set_xlim([<span style=color:#f92672>-</span><span style=color:#ae81ff>0.15</span>, <span style=color:#ae81ff>0.0</span>])
-</code></pre></div><p><img src=extremes_48_1.png alt=png></p>
-<h1 id=copulas>Copulas</h1>
-<p>Modelling both indexes. First we model the volatility to get the residuals. Then we apply a copula to the residuals, as the residuals is the loss.</p>
-<p>The Garch(1,1) model is for returns \(r_t\) is:</p>
-<p>$$
+</h3></blockquote><div class="layui-card-body markdown-body single-content">
+<p>In this notebook I will discuss the basic ideas of modelling quantiles and copula dependence. These ideas are important for risk managers as International banking regulations require banks to pay specific attention to the probability of large losses over short periods of time and undeerestimation of dependence among extreme risks can lead to serious consequences, as for instance those we experienced during the last financial crisis. Including extreme risks in probabilistic models is recognized nowadays as a necessary condition for good risk management in any institution, and not restricted anymore to reinsurance companies, who are the providers of covers for natural catastrophes. One of the main problems that come up is the fact that the observed data usually only includes few extreme obervations and the never exceed the maximum historical observation, meaning we only have a truncated version of the &ldquo;real&rdquo; distribution. This makes simulation of extreme values problematic. For a more detailed overview see <a href=https://www.econbiz.de/Record/an-application-of-extreme-value-theory-for-measuring-financial-risk-gilli-manfred/10005701798>Gilli</a> or <a href=https://link.springer.com/chapter/10.1007/978-3-030-04161-8_51>Kratz</a></p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#f92672>import</span> numpy <span style=color:#66d9ef>as</span> np
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> requests
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> pandas <span style=color:#66d9ef>as</span> pd
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> matplotlib.pyplot <span style=color:#66d9ef>as</span> plt
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> scipy.stats <span style=color:#f92672>import</span> norm, t, kurtosis, skew, nct, beta, pareto, expon, genpareto, kendalltau
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> scipy.optimize <span style=color:#f92672>import</span> minimize, brentq
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> statsmodels.distributions.empirical_distribution <span style=color:#f92672>import</span> ECDF
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>headers <span style=color:#f92672>=</span> {<span style=color:#e6db74>&#39;User-Agent&#39;</span>: <span style=color:#e6db74>&#39;Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36&#39;</span>}
+</span></span><span style=display:flex><span>url_esg <span style=color:#f92672>=</span> <span style=color:#e6db74>f</span><span style=color:#e6db74>&#34;https://query1.finance.yahoo.com/v7/finance/spark?symbols=^GSPC&amp;range=10y&amp;interval=1d&amp;indicators=close&amp;includeTimestamps=false&amp;includePrePost=false&amp;corsDomain=finance.yahoo.com&amp;.tsrc=finance&#34;</span>
+</span></span><span style=display:flex><span>response <span style=color:#f92672>=</span> requests<span style=color:#f92672>.</span>get(url_esg, headers<span style=color:#f92672>=</span>headers)
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>get_index</span>(tick):
+</span></span><span style=display:flex><span>    <span style=color:#e6db74>&#34;&#34;&#34;
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>    Function that takes the sp500 index from yahoo
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>    &#34;&#34;&#34;</span>
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    headers <span style=color:#f92672>=</span> {<span style=color:#e6db74>&#39;User-Agent&#39;</span>: <span style=color:#e6db74>&#39;Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36&#39;</span>}
+</span></span><span style=display:flex><span>    <span style=color:#75715e># ESG historical data (only changes yearly)</span>
+</span></span><span style=display:flex><span>    url_esg <span style=color:#f92672>=</span> <span style=color:#e6db74>f</span><span style=color:#e6db74>&#34;https://query1.finance.yahoo.com/v7/finance/spark?symbols=</span><span style=color:#e6db74>{</span>tick<span style=color:#e6db74>}</span><span style=color:#e6db74>&amp;range=10y&amp;interval=1d&amp;indicators=close&amp;includeTimestamps=false&amp;includePrePost=false&amp;corsDomain=finance.yahoo.com&amp;.tsrc=finance&#34;</span>
+</span></span><span style=display:flex><span>    response <span style=color:#f92672>=</span> requests<span style=color:#f92672>.</span>get(url_esg, headers<span style=color:#f92672>=</span>headers)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> response<span style=color:#f92672>.</span>ok:
+</span></span><span style=display:flex><span>        sp500 <span style=color:#f92672>=</span> pd<span style=color:#f92672>.</span>DataFrame({<span style=color:#e6db74>&#39;date&#39;</span>:pd<span style=color:#f92672>.</span>to_datetime(response<span style=color:#f92672>.</span>json()[<span style=color:#e6db74>&#39;spark&#39;</span>][<span style=color:#e6db74>&#39;result&#39;</span>][<span style=color:#ae81ff>0</span>][<span style=color:#e6db74>&#39;response&#39;</span>][<span style=color:#ae81ff>0</span>][<span style=color:#e6db74>&#39;timestamp&#39;</span>], unit<span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;s&#39;</span>),
+</span></span><span style=display:flex><span>                              <span style=color:#e6db74>&#39;price&#39;</span>:response<span style=color:#f92672>.</span>json()[<span style=color:#e6db74>&#39;spark&#39;</span>][<span style=color:#e6db74>&#39;result&#39;</span>][<span style=color:#ae81ff>0</span>][<span style=color:#e6db74>&#39;response&#39;</span>][<span style=color:#ae81ff>0</span>][<span style=color:#e6db74>&#39;indicators&#39;</span>][<span style=color:#e6db74>&#39;quote&#39;</span>][<span style=color:#ae81ff>0</span>][<span style=color:#e6db74>&#39;close&#39;</span>]})
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>else</span>:
+</span></span><span style=display:flex><span>        print(<span style=color:#e6db74>&#34;Empty data frame&#34;</span>)
+</span></span><span style=display:flex><span>        sp500 <span style=color:#f92672>=</span> pd<span style=color:#f92672>.</span>DataFrame()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> sp500
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>sp500 <span style=color:#f92672>=</span> get_index(<span style=color:#e6db74>&#39;^GSPC&#39;</span>)
+</span></span><span style=display:flex><span>nasdaq <span style=color:#f92672>=</span> get_index(<span style=color:#e6db74>&#39;^IXIC&#39;</span>)
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>plt<span style=color:#f92672>.</span>figure(figsize<span style=color:#f92672>=</span>(<span style=color:#ae81ff>5</span>,<span style=color:#ae81ff>5</span>))
+</span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>plot(sp500[<span style=color:#e6db74>&#39;date&#39;</span>], sp500[<span style=color:#e6db74>&#39;price&#39;</span>])
+</span></span></code></pre></div><pre><code>[&lt;matplotlib.lines.Line2D at 0x286fa8c8fa0&gt;]
+</code></pre><p><img src=extremes_5_1.png alt=png></p><p>Let&rsquo;s plot the daily log-returns</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>] <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>log(sp500[<span style=color:#e6db74>&#39;price&#39;</span>])<span style=color:#f92672>.</span>diff()
+</span></span><span style=display:flex><span>sp500 <span style=color:#f92672>=</span> sp500<span style=color:#f92672>.</span>iloc[:,:]<span style=color:#f92672>.</span>dropna(axis<span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>nasdaq[<span style=color:#e6db74>&#39;log_return&#39;</span>] <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>log(nasdaq[<span style=color:#e6db74>&#39;price&#39;</span>])<span style=color:#f92672>.</span>diff()
+</span></span><span style=display:flex><span>nasdaq <span style=color:#f92672>=</span> nasdaq<span style=color:#f92672>.</span>iloc[:,:]<span style=color:#f92672>.</span>dropna(axis<span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>)
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>fig, ax <span style=color:#f92672>=</span> plt<span style=color:#f92672>.</span>subplots(<span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>2</span>, figsize<span style=color:#f92672>=</span>(<span style=color:#ae81ff>10</span>,<span style=color:#ae81ff>5</span>))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>.</span>plot(sp500[<span style=color:#e6db74>&#39;date&#39;</span>], sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>])
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>1</span>]<span style=color:#f92672>.</span>plot(nasdaq[<span style=color:#e6db74>&#39;date&#39;</span>], nasdaq[<span style=color:#e6db74>&#39;log_return&#39;</span>])
+</span></span></code></pre></div><p><img src=extremes_8_1.png alt=png></p><h1 id=extremes>Extremes</h1><p>Let&rsquo;s plot the histogram and try different probability distributions.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>mu_normal <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>mean(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>])
+</span></span><span style=display:flex><span>var_normal <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>mean((sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]<span style=color:#f92672>-</span>mu_normal) <span style=color:#f92672>**</span> <span style=color:#ae81ff>2</span>)
+</span></span><span style=display:flex><span>normal_fit <span style=color:#f92672>=</span> norm<span style=color:#f92672>.</span>pdf(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), mu_normal, np<span style=color:#f92672>.</span>sqrt(var_normal))
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>mu_normal
+</span></span></code></pre></div><pre><code>0.0005225186337781287
+</code></pre><h2 id=a-normal-distribution>A normal distribution</h2><p>For the normal distribution we simply use the well known maximum likelihood estimators for parameters.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>bins <span style=color:#f92672>=</span> plt<span style=color:#f92672>.</span>hist(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>], bins <span style=color:#f92672>=</span> <span style=color:#ae81ff>100</span>, density<span style=color:#f92672>=</span><span style=color:#66d9ef>True</span>)
+</span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]),normal_fit)
+</span></span></code></pre></div><p><img src=extremes_15_1.png alt=png></p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>fig, ax <span style=color:#f92672>=</span> plt<span style=color:#f92672>.</span>subplots()
+</span></span><span style=display:flex><span>ax<span style=color:#f92672>.</span>plot([<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>1</span>], [<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>1</span>], color <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;black&#39;</span>)
+</span></span><span style=display:flex><span>ax<span style=color:#f92672>.</span>scatter(norm<span style=color:#f92672>.</span>ppf(np<span style=color:#f92672>.</span>array(range(sp500<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>]))<span style=color:#f92672>/</span>sp500<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>], mu_normal, np<span style=color:#f92672>.</span>sqrt(var_normal)),sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]))
+</span></span><span style=display:flex><span>ax<span style=color:#f92672>.</span>set_xlim([<span style=color:#f92672>-</span><span style=color:#ae81ff>0.04</span>, <span style=color:#ae81ff>0.04</span>])
+</span></span><span style=display:flex><span>ax<span style=color:#f92672>.</span>set_ylim([<span style=color:#f92672>-</span><span style=color:#ae81ff>0.1</span>, <span style=color:#ae81ff>0.1</span>])
+</span></span></code></pre></div><p><img src=extremes_16_1.png alt=png></p><h2 id=a-student-t-distribution>A student t distribution</h2><p>$$ r_t = m + sx_t$$</p><p>where $x_t$ is the standard t random variable. We can fit by a method of moments</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>m <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>mean(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>])
+</span></span><span style=display:flex><span>v <span style=color:#f92672>=</span> (<span style=color:#ae81ff>4</span><span style=color:#f92672>*</span>kurtosis(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]) <span style=color:#f92672>-</span> <span style=color:#ae81ff>6</span>)<span style=color:#f92672>/</span>(kurtosis(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>])<span style=color:#f92672>-</span><span style=color:#ae81ff>3</span>)
+</span></span><span style=display:flex><span>s <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>sqrt( (np<span style=color:#f92672>.</span>std(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]) <span style=color:#f92672>**</span> <span style=color:#ae81ff>2</span>)<span style=color:#f92672>*</span> (v<span style=color:#f92672>-</span><span style=color:#ae81ff>2</span>) <span style=color:#f92672>/</span> v)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>t_fit <span style=color:#f92672>=</span> t<span style=color:#f92672>.</span>pdf(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), df <span style=color:#f92672>=</span> v, loc <span style=color:#f92672>=</span> m, scale <span style=color:#f92672>=</span> s)
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>bins <span style=color:#f92672>=</span> plt<span style=color:#f92672>.</span>hist(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>], bins <span style=color:#f92672>=</span> <span style=color:#ae81ff>100</span>, density<span style=color:#f92672>=</span><span style=color:#66d9ef>True</span>, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;empirical&#39;</span>)
+</span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]),t_fit, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;t-dist&#39;</span>)
+</span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]),normal_fit, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;norm-dist&#39;</span>)
+</span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>legend()
+</span></span></code></pre></div><p><img src=extremes_19_1.png alt=png></p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>fig, ax <span style=color:#f92672>=</span> plt<span style=color:#f92672>.</span>subplots()
+</span></span><span style=display:flex><span>ax<span style=color:#f92672>.</span>plot([<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>1</span>], [<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>1</span>], color <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;black&#39;</span>)
+</span></span><span style=display:flex><span>ax<span style=color:#f92672>.</span>scatter(t<span style=color:#f92672>.</span>ppf(np<span style=color:#f92672>.</span>array(range(sp500<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>]))<span style=color:#f92672>/</span>sp500<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>], df <span style=color:#f92672>=</span> v, loc <span style=color:#f92672>=</span> m, scale <span style=color:#f92672>=</span> s),sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]))
+</span></span><span style=display:flex><span>ax<span style=color:#f92672>.</span>set_xlim([<span style=color:#f92672>-</span><span style=color:#ae81ff>0.1</span>, <span style=color:#ae81ff>0.1</span>])
+</span></span><span style=display:flex><span>ax<span style=color:#f92672>.</span>set_ylim([<span style=color:#f92672>-</span><span style=color:#ae81ff>0.1</span>, <span style=color:#ae81ff>0.1</span>])
+</span></span></code></pre></div><p><img src=extremes_20_1.png alt=png></p><h2 id=non-central-t-distribution>non-central-t-distribution</h2><p>The skewness of the sp500 data is</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>skew(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>])
+</span></span></code></pre></div><pre><code>-0.9309407317689141
+</code></pre><p>Thus, it is natural to consider a distribution that is not symmetric. We have to run a optimization algorithm</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>params <span style=color:#f92672>=</span> nct<span style=color:#f92672>.</span>fit(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>], floc <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>)
+</span></span><span style=display:flex><span>nct_fit <span style=color:#f92672>=</span> nct<span style=color:#f92672>.</span>pdf(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), df <span style=color:#f92672>=</span> params[<span style=color:#ae81ff>0</span>], nc <span style=color:#f92672>=</span> params[<span style=color:#ae81ff>1</span>], loc <span style=color:#f92672>=</span> params[<span style=color:#ae81ff>2</span>], scale <span style=color:#f92672>=</span> params[<span style=color:#ae81ff>3</span>])
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>bins <span style=color:#f92672>=</span> plt<span style=color:#f92672>.</span>hist(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>], bins <span style=color:#f92672>=</span> <span style=color:#ae81ff>100</span>, density<span style=color:#f92672>=</span><span style=color:#66d9ef>True</span>, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;empirical&#39;</span>)
+</span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]),t_fit, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;t-dist&#39;</span>)
+</span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]),normal_fit, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;normal&#39;</span>)
+</span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]),nct_fit, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;nct&#39;</span>)
+</span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>legend()
+</span></span></code></pre></div><p><img src=extremes_25_1.png alt=png></p><p>So the fit seems to be good. Let&rsquo;s inspect the tails.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>empirical_cdf <span style=color:#f92672>=</span> ECDF(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]))
+</span></span><span style=display:flex><span>normal_cdf <span style=color:#f92672>=</span> norm<span style=color:#f92672>.</span>cdf(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), mu_normal, np<span style=color:#f92672>.</span>sqrt(var_normal))
+</span></span><span style=display:flex><span>t_cdf <span style=color:#f92672>=</span> t<span style=color:#f92672>.</span>cdf(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), df <span style=color:#f92672>=</span> v, loc <span style=color:#f92672>=</span> m, scale <span style=color:#f92672>=</span> s)
+</span></span><span style=display:flex><span>nct_cdf <span style=color:#f92672>=</span> nct<span style=color:#f92672>.</span>cdf(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), df <span style=color:#f92672>=</span> params[<span style=color:#ae81ff>0</span>], nc <span style=color:#f92672>=</span> params[<span style=color:#ae81ff>1</span>], loc <span style=color:#f92672>=</span> params[<span style=color:#ae81ff>2</span>], scale <span style=color:#f92672>=</span> params[<span style=color:#ae81ff>3</span>])
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>fig, ax <span style=color:#f92672>=</span> plt<span style=color:#f92672>.</span>subplots(figsize <span style=color:#f92672>=</span> (<span style=color:#ae81ff>10</span>,<span style=color:#ae81ff>5</span>))
+</span></span><span style=display:flex><span>ax<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), empirical_cdf(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>])), label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;empirical&#39;</span>)
+</span></span><span style=display:flex><span>ax<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), normal_cdf, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;normal&#39;</span>)
+</span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), t_cdf, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;t-dist&#39;</span>)
+</span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), nct_cdf, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;nct&#39;</span>)
+</span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>legend()
+</span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>xlim([<span style=color:#f92672>-</span><span style=color:#ae81ff>0.05</span>, <span style=color:#ae81ff>0.06</span>])
+</span></span></code></pre></div><p><img src=extremes_28_1.png alt=png></p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>fig, ax <span style=color:#f92672>=</span> plt<span style=color:#f92672>.</span>subplots(<span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>2</span>, figsize <span style=color:#f92672>=</span> (<span style=color:#ae81ff>15</span>,<span style=color:#ae81ff>5</span>))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), empirical_cdf(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>])), label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;empirical&#39;</span>)
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), normal_cdf, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;normal&#39;</span>)
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), t_cdf, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;t-dist&#39;</span>)
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), nct_cdf, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;nct&#39;</span>)
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>.</span>legend()
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>.</span>set_ylim([<span style=color:#ae81ff>0.95</span>, <span style=color:#ae81ff>1</span>])
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>.</span>set_xlim([<span style=color:#ae81ff>0</span>, <span style=color:#ae81ff>0.1</span>])
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>1</span>]<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), empirical_cdf(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>])), label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;empirical&#39;</span>)
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>1</span>]<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), normal_cdf, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;normal&#39;</span>)
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>1</span>]<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), t_cdf, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;t-dist&#39;</span>)
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>1</span>]<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), nct_cdf, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;nct&#39;</span>)
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>1</span>]<span style=color:#f92672>.</span>legend()
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>1</span>]<span style=color:#f92672>.</span>set_ylim([<span style=color:#ae81ff>0.99</span>, <span style=color:#ae81ff>1</span>])
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>1</span>]<span style=color:#f92672>.</span>set_xlim([<span style=color:#ae81ff>0</span>, <span style=color:#ae81ff>0.1</span>])
+</span></span></code></pre></div><p><img src=extremes_29_1.png alt=png></p><p>The nct seems to fit the center part the best, while the t-distribution seems to fit the tail the best.</p><h2 id=order-statistics-of-the-empirical-distribution>Order Statistics of the empirical distribution</h2><p>Let&rsquo;s compare the case when we calculate the quantiles from the observed data vs the theoretical quantile. We will assume that the data comes from a t distribution with 4 degrees of freedom. We calculate the quantiles using our 1000 observations and compare it to the theoretical quantile. We repeat this experiment 1000 times to get a feeling of the variability of our quantile estimate from the observations.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>pv <span style=color:#f92672>=</span> [<span style=color:#ae81ff>0.0001</span>,<span style=color:#ae81ff>0.001</span>,<span style=color:#ae81ff>0.01</span>,<span style=color:#ae81ff>0.05</span>,<span style=color:#ae81ff>0.2</span>,<span style=color:#ae81ff>0.5</span>,<span style=color:#ae81ff>0.8</span>,<span style=color:#ae81ff>0.95</span>,<span style=color:#ae81ff>0.99</span>,<span style=color:#ae81ff>0.999</span>,<span style=color:#ae81ff>0.9999</span>]
+</span></span><span style=display:flex><span>simulate_quantile <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>zeros((len(pv), <span style=color:#ae81ff>1000</span>))
+</span></span><span style=display:flex><span>theoretical_quantile <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>zeros((len(pv), <span style=color:#ae81ff>1000</span>))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(<span style=color:#ae81ff>1000</span>):
+</span></span><span style=display:flex><span>    simulate_quantile[:,i] <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>quantile(t<span style=color:#f92672>.</span>rvs(df <span style=color:#f92672>=</span><span style=color:#ae81ff>4</span>, size <span style=color:#f92672>=</span> <span style=color:#ae81ff>1000</span>), pv)
+</span></span><span style=display:flex><span>    theoretical_quantile[:, i] <span style=color:#f92672>=</span> t<span style=color:#f92672>.</span>ppf(pv, df <span style=color:#f92672>=</span> <span style=color:#ae81ff>4</span>)
+</span></span><span style=display:flex><span>    
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>for</span> j, _ <span style=color:#f92672>in</span> enumerate(pv):
+</span></span><span style=display:flex><span>    plt<span style=color:#f92672>.</span>plot(theoretical_quantile[j,:], simulate_quantile[j, :], color <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;black&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>plot([<span style=color:#f92672>-</span><span style=color:#ae81ff>20</span>, <span style=color:#ae81ff>20</span>],[<span style=color:#f92672>-</span><span style=color:#ae81ff>20</span>, <span style=color:#ae81ff>20</span>])
+</span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>xlabel(<span style=color:#e6db74>&#39;Theoretical Quantiles&#39;</span>)
+</span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>ylabel(<span style=color:#e6db74>&#39;Simulated Quantiles&#39;</span>)
+</span></span></code></pre></div><p><img src=extremes_34_1.png alt=png></p><p>We see that the non-center simulated quantiles have much higher variability. This examples shows that the tail quantiles of the empirical distribution
+are inaccurate predictors of the true quantiles. Thus, when calculating tail quantiles, such as VaR, one has to fit a distribution to the data, rather then estimating the quantiles from the observed data.</p><p>The usual approach is to use the empirical distribution in the main body of the data between the 5% and 95% quantiles), while fitting a heavy tail distribution to the tails, for example the pareto distribution.</p><h1 id=estimating-the-tail-losses>Estimating the Tail losses</h1><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>q05
+</span></span></code></pre></div><pre><code>-0.01545860011031408
+</code></pre><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>q05 <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>quantile(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>], <span style=color:#ae81ff>0.05</span>)  <span style=color:#75715e># 5% quantile</span>
+</span></span><span style=display:flex><span>losses <span style=color:#f92672>=</span> <span style=color:#f92672>-</span> sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]<span style=color:#f92672>.</span>loc[sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>] <span style=color:#f92672>&lt;</span> q05] <span style=color:#f92672>+</span>q05
+</span></span><span style=display:flex><span>params <span style=color:#f92672>=</span>  expon<span style=color:#f92672>.</span>fit(losses, loc <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>, scale <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>params_t <span style=color:#f92672>=</span> t<span style=color:#f92672>.</span>fit(losses, loc <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>)
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python></code></pre></div><pre><code>(1.6520658512964799, 0.005612857735874041, 0.004692617830430222)
+</code></pre><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>plt<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]<span style=color:#f92672>.</span>loc[sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>] <span style=color:#f92672>&lt;</span> q05]), empirical_cdf(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]<span style=color:#f92672>.</span>loc[sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>] <span style=color:#f92672>&lt;</span> q05])))
+</span></span></code></pre></div><p><img src=extremes_40_1.png alt=png></p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>expon_tail_cdf <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.05</span><span style=color:#f92672>*</span>np<span style=color:#f92672>.</span>sort((<span style=color:#ae81ff>1</span><span style=color:#f92672>-</span>expon<span style=color:#f92672>.</span>cdf(losses, loc <span style=color:#f92672>=</span> params[<span style=color:#ae81ff>0</span>], scale <span style=color:#f92672>=</span> params[<span style=color:#ae81ff>1</span>])))
+</span></span><span style=display:flex><span>t_tail_cdf <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.05</span><span style=color:#f92672>*</span>np<span style=color:#f92672>.</span>sort(<span style=color:#ae81ff>1</span><span style=color:#f92672>-</span>t<span style=color:#f92672>.</span>cdf(losses,df <span style=color:#f92672>=</span> params_t[<span style=color:#ae81ff>0</span>], loc <span style=color:#f92672>=</span> params_t[<span style=color:#ae81ff>1</span>], scale <span style=color:#f92672>=</span> params_t[<span style=color:#ae81ff>2</span>]))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>fig, ax <span style=color:#f92672>=</span> plt<span style=color:#f92672>.</span>subplots(<span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>1</span>, figsize <span style=color:#f92672>=</span> (<span style=color:#ae81ff>15</span>,<span style=color:#ae81ff>5</span>))
+</span></span><span style=display:flex><span>ax<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), empirical_cdf(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>])), label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;empirical&#39;</span>)
+</span></span><span style=display:flex><span>ax<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]<span style=color:#f92672>.</span>loc[sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>] <span style=color:#f92672>&lt;</span> q05]), expon_tail_cdf, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;expon_tail_cdf&#39;</span>)
+</span></span><span style=display:flex><span>ax<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]<span style=color:#f92672>.</span>loc[sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>] <span style=color:#f92672>&lt;</span> q05]), t_tail_cdf, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;t_tail_cdf&#39;</span>)
+</span></span><span style=display:flex><span>ax<span style=color:#f92672>.</span>legend()
+</span></span><span style=display:flex><span>ax<span style=color:#f92672>.</span>set_ylim([<span style=color:#ae81ff>0.0</span>, <span style=color:#ae81ff>0.05</span>])
+</span></span><span style=display:flex><span>ax<span style=color:#f92672>.</span>set_xlim([<span style=color:#f92672>-</span><span style=color:#ae81ff>0.15</span>, <span style=color:#ae81ff>0.0</span>])
+</span></span></code></pre></div><p><img src=extremes_42_1.png alt=png></p><h1 id=threshold-exceedances>Threshold exceedances</h1><p>What is the distribution of \(X(t)\) given \(X(t)\) exceeds some high threshold (for example, its 0.99 quantile)? The generalized Pareto Distribution has been shown to model the tail distribution given that the threshold is large enough GIVEN that the maximum can be modelled by a General extreme value distribution, which most distributions considered have.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>q05 <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>quantile(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>], <span style=color:#ae81ff>0.05</span>)  <span style=color:#75715e># 5% quantile</span>
+</span></span><span style=display:flex><span>losses <span style=color:#f92672>=</span> <span style=color:#f92672>-</span> sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]<span style=color:#f92672>.</span>loc[sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>] <span style=color:#f92672>&lt;</span> q05] <span style=color:#f92672>+</span>q05
+</span></span><span style=display:flex><span>params_genpareto <span style=color:#f92672>=</span> genpareto<span style=color:#f92672>.</span>fit(losses, loc <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>)
+</span></span><span style=display:flex><span>params_genpareto
+</span></span></code></pre></div><pre><code>(0.43767003369774377, 3.0926415630468514e-05, 0.0067057240009978335)
+</code></pre><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>genpareto_tail_pdf <span style=color:#f92672>=</span> genpareto<span style=color:#f92672>.</span>pdf(sorted(losses), params_genpareto[<span style=color:#ae81ff>0</span>], params_genpareto[<span style=color:#ae81ff>1</span>], params_genpareto[<span style=color:#ae81ff>2</span>])
+</span></span><span style=display:flex><span>genpareto_tail_cdf <span style=color:#f92672>=</span> genpareto<span style=color:#f92672>.</span>cdf(sorted(losses), params_genpareto[<span style=color:#ae81ff>0</span>], params_genpareto[<span style=color:#ae81ff>1</span>], params_genpareto[<span style=color:#ae81ff>2</span>])
+</span></span><span style=display:flex><span>genpareto_tail_cdf <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.05</span><span style=color:#f92672>*</span>np<span style=color:#f92672>.</span>sort(<span style=color:#ae81ff>1</span><span style=color:#f92672>-</span>genpareto_tail_cdf)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>fig, ax <span style=color:#f92672>=</span> plt<span style=color:#f92672>.</span>subplots(<span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>1</span>, figsize <span style=color:#f92672>=</span> (<span style=color:#ae81ff>15</span>,<span style=color:#ae81ff>5</span>))
+</span></span><span style=display:flex><span>ax<span style=color:#f92672>.</span>hist(losses, density<span style=color:#f92672>=</span><span style=color:#66d9ef>True</span>, bins <span style=color:#f92672>=</span> <span style=color:#ae81ff>80</span>)
+</span></span><span style=display:flex><span>ax<span style=color:#f92672>.</span>plot(sorted(losses), genpareto_tail_pdf)
+</span></span></code></pre></div><p><img src=extremes_47_1.png alt=png></p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>fig, ax <span style=color:#f92672>=</span> plt<span style=color:#f92672>.</span>subplots(<span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>1</span>, figsize <span style=color:#f92672>=</span> (<span style=color:#ae81ff>15</span>,<span style=color:#ae81ff>5</span>))
+</span></span><span style=display:flex><span>ax<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), empirical_cdf(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>])), label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;empirical&#39;</span>)
+</span></span><span style=display:flex><span>ax<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]<span style=color:#f92672>.</span>loc[sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>] <span style=color:#f92672>&lt;</span> q05]), genpareto_tail_cdf, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;expon_tail_cdf&#39;</span>)
+</span></span><span style=display:flex><span>ax<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]<span style=color:#f92672>.</span>loc[sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>] <span style=color:#f92672>&lt;</span> q05]), t_tail_cdf, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;t_tail_cdf&#39;</span>)
+</span></span><span style=display:flex><span>ax<span style=color:#f92672>.</span>plot(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]<span style=color:#f92672>.</span>loc[sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>] <span style=color:#f92672>&lt;</span> q05]), genpareto_tail_cdf, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;genpareto_cdf&#39;</span>)
+</span></span><span style=display:flex><span>ax<span style=color:#f92672>.</span>legend()
+</span></span><span style=display:flex><span>ax<span style=color:#f92672>.</span>set_ylim([<span style=color:#ae81ff>0.0</span>, <span style=color:#ae81ff>0.05</span>])
+</span></span><span style=display:flex><span>ax<span style=color:#f92672>.</span>set_xlim([<span style=color:#f92672>-</span><span style=color:#ae81ff>0.15</span>, <span style=color:#ae81ff>0.0</span>])
+</span></span></code></pre></div><p><img src=extremes_48_1.png alt=png></p><h1 id=copulas>Copulas</h1><p>Modelling both indexes. First we model the volatility to get the residuals. Then we apply a copula to the residuals, as the residuals is the loss.</p><p>The Garch(1,1) model is for returns \(r_t\) is:</p><p>$$
 \begin{aligned}
 r_t &= \mu_t + \epsilon_t \\\
 \epsilon_t &=z_t\sigma_t \\\
 \sigma_t^2 &= \alpha_0 + \alpha_1 \epsilon_{t-1}^2 + \beta_1\sigma_{t-1}^2
 \end{aligned}
 $$
-\(\alpha_0, \alpha_1, \beta_1 > 0\) as volatility is positive. \(z_t\) is iid and \(E[z_t] = 0\) and \(Var[z_t] = 1\). \(mu_t\) is usually assumed to be constant. Let \(u_t = (\epsilon_t^2 - sigma_t^2 )\) and plug it in then</p>
-<p>$$ \epsilon_t^2 =\alpha_0 + (\alpha_1 + \beta_1) \epsilon_{t-1}^2 + u_t -\beta_1u_{t-1}$$</p>
-<p>We see that this is simply an ARIMA process. We set the constraints \(0 &lt; \alpha_1 + \beta_1 &lt;1\) to get a mean-reverting process.</p>
-<p>Also, More realistic VaR estimation with GARCH -> VaR = mean + (GARCH vol) * quantile</p>
-<p>Let&rsquo;s fit a Garch model.</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#f92672>from</span> arch <span style=color:#f92672>import</span> arch_model
-sp500_garch_model <span style=color:#f92672>=</span> arch_model(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>], p <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>, q <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>,
-                      mean <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;constant&#39;</span>, vol <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;GARCH&#39;</span>, dist <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;normal&#39;</span>)
-sp500_garch_fit <span style=color:#f92672>=</span> sp500_garch_model<span style=color:#f92672>.</span>fit()
-
-nasdaq_garch_model <span style=color:#f92672>=</span> arch_model(nasdaq[<span style=color:#e6db74>&#39;log_return&#39;</span>], p <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>, q <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>,
-                      mean <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;constant&#39;</span>, vol <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;GARCH&#39;</span>, dist <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;normal&#39;</span>)
-nasdaq_garch_fit <span style=color:#f92672>=</span> nasdaq_garch_model<span style=color:#f92672>.</span>fit()
-
-plt<span style=color:#f92672>.</span>plot(sp500_garch_fit<span style=color:#f92672>.</span>resid)
-</code></pre></div><p><img src=extremes_52_3.png alt=png></p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#f92672>from</span> statsmodels.stats.diagnostic <span style=color:#f92672>import</span> acorr_ljungbox
-
-<span style=color:#75715e># Perform the Ljung-Box test, do</span>
-<span style=color:#75715e># The null hypothesis of Ljung-Box test is: the data is independently distributed.</span>
-lb_test <span style=color:#f92672>=</span> acorr_ljungbox(sp500_garch_fit<span style=color:#f92672>.</span>resid , lags <span style=color:#f92672>=</span> <span style=color:#ae81ff>10</span>)
-
-<span style=color:#75715e># Store p-values in DataFrame</span>
-df <span style=color:#f92672>=</span> pd<span style=color:#f92672>.</span>DataFrame({<span style=color:#e6db74>&#39;P-values&#39;</span>: lb_test<span style=color:#f92672>.</span>iloc[:,<span style=color:#ae81ff>1</span>]})<span style=color:#f92672>.</span>T
-
-<span style=color:#75715e># Create column names for each lag</span>
-col_num <span style=color:#f92672>=</span> df<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>1</span>]
-col_names <span style=color:#f92672>=</span> [<span style=color:#e6db74>&#39;lag_&#39;</span><span style=color:#f92672>+</span>str(num) <span style=color:#66d9ef>for</span> num <span style=color:#f92672>in</span> list(range(<span style=color:#ae81ff>1</span>,col_num<span style=color:#f92672>+</span><span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>1</span>))]
-
-<span style=color:#75715e># Display the p-values</span>
-df<span style=color:#f92672>.</span>columns <span style=color:#f92672>=</span> col_names
-df
-</code></pre></div>
-<pre><code>.dataframe tbody tr th {
+\(\alpha_0, \alpha_1, \beta_1 > 0\) as volatility is positive. \(z_t\) is iid and \(E[z_t] = 0\) and \(Var[z_t] = 1\). \(mu_t\) is usually assumed to be constant. Let \(u_t = (\epsilon_t^2 - sigma_t^2 )\) and plug it in then</p><p>$$ \epsilon_t^2 =\alpha_0 + (\alpha_1 + \beta_1) \epsilon_{t-1}^2 + u_t -\beta_1u_{t-1}$$</p><p>We see that this is simply an ARIMA process. We set the constraints \(0 &lt; \alpha_1 + \beta_1 &lt;1\) to get a mean-reverting process.</p><p>Also, More realistic VaR estimation with GARCH -> VaR = mean + (GARCH vol) * quantile</p><p>Let&rsquo;s fit a Garch model.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#f92672>from</span> arch <span style=color:#f92672>import</span> arch_model
+</span></span><span style=display:flex><span>sp500_garch_model <span style=color:#f92672>=</span> arch_model(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>], p <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>, q <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>,
+</span></span><span style=display:flex><span>                      mean <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;constant&#39;</span>, vol <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;GARCH&#39;</span>, dist <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;normal&#39;</span>)
+</span></span><span style=display:flex><span>sp500_garch_fit <span style=color:#f92672>=</span> sp500_garch_model<span style=color:#f92672>.</span>fit()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>nasdaq_garch_model <span style=color:#f92672>=</span> arch_model(nasdaq[<span style=color:#e6db74>&#39;log_return&#39;</span>], p <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>, q <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>,
+</span></span><span style=display:flex><span>                      mean <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;constant&#39;</span>, vol <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;GARCH&#39;</span>, dist <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;normal&#39;</span>)
+</span></span><span style=display:flex><span>nasdaq_garch_fit <span style=color:#f92672>=</span> nasdaq_garch_model<span style=color:#f92672>.</span>fit()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>plot(sp500_garch_fit<span style=color:#f92672>.</span>resid)
+</span></span></code></pre></div><p><img src=extremes_52_3.png alt=png></p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#f92672>from</span> statsmodels.stats.diagnostic <span style=color:#f92672>import</span> acorr_ljungbox
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># Perform the Ljung-Box test, do</span>
+</span></span><span style=display:flex><span><span style=color:#75715e># The null hypothesis of Ljung-Box test is: the data is independently distributed.</span>
+</span></span><span style=display:flex><span>lb_test <span style=color:#f92672>=</span> acorr_ljungbox(sp500_garch_fit<span style=color:#f92672>.</span>resid , lags <span style=color:#f92672>=</span> <span style=color:#ae81ff>10</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># Store p-values in DataFrame</span>
+</span></span><span style=display:flex><span>df <span style=color:#f92672>=</span> pd<span style=color:#f92672>.</span>DataFrame({<span style=color:#e6db74>&#39;P-values&#39;</span>: lb_test<span style=color:#f92672>.</span>iloc[:,<span style=color:#ae81ff>1</span>]})<span style=color:#f92672>.</span>T
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># Create column names for each lag</span>
+</span></span><span style=display:flex><span>col_num <span style=color:#f92672>=</span> df<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>1</span>]
+</span></span><span style=display:flex><span>col_names <span style=color:#f92672>=</span> [<span style=color:#e6db74>&#39;lag_&#39;</span><span style=color:#f92672>+</span>str(num) <span style=color:#66d9ef>for</span> num <span style=color:#f92672>in</span> list(range(<span style=color:#ae81ff>1</span>,col_num<span style=color:#f92672>+</span><span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>1</span>))]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># Display the p-values</span>
+</span></span><span style=display:flex><span>df<span style=color:#f92672>.</span>columns <span style=color:#f92672>=</span> col_names
+</span></span><span style=display:flex><span>df
+</span></span></code></pre></div><pre><code>.dataframe tbody tr th {
     vertical-align: top;
 }
 
 .dataframe thead th {
     text-align: right;
 }
-</code></pre>
-<p></p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>nasdaq_garch_fit<span style=color:#f92672>.</span>resid
-</code></pre></div><pre><code>1      -0.020776
+</code></pre><p></p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>nasdaq_garch_fit<span style=color:#f92672>.</span>resid
+</span></span></code></pre></div><pre><code>1      -0.020776
 2       0.009954
 3       0.033189
 4      -0.000138
@@ -339,106 +270,77 @@ df
 2514    0.003130
 2515    0.002464
 Name: resid, Length: 2515, dtype: float64
-</code></pre>
-<h2 id=copula-fit>Copula fit</h2>
-<p>First fit the marginals</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>sp500_nct_params <span style=color:#f92672>=</span> nct<span style=color:#f92672>.</span>fit(sp500_garch_fit<span style=color:#f92672>.</span>resid)
-sp500_nct_fit <span style=color:#f92672>=</span> nct<span style=color:#f92672>.</span>pdf(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), df <span style=color:#f92672>=</span> sp500_nct_params[<span style=color:#ae81ff>0</span>], nc <span style=color:#f92672>=</span> sp500_nct_params[<span style=color:#ae81ff>1</span>], loc <span style=color:#f92672>=</span> sp500_nct_params[<span style=color:#ae81ff>2</span>], scale <span style=color:#f92672>=</span> sp500_nct_params[<span style=color:#ae81ff>3</span>])
-
-nasdaq_nct_params <span style=color:#f92672>=</span> nct<span style=color:#f92672>.</span>fit(nasdaq_garch_fit<span style=color:#f92672>.</span>resid)
-nasdaq_nct_fit <span style=color:#f92672>=</span> nct<span style=color:#f92672>.</span>pdf(sorted(nasdaq[<span style=color:#e6db74>&#39;log_return&#39;</span>]), df <span style=color:#f92672>=</span> nasdaq_nct_params[<span style=color:#ae81ff>0</span>], nc <span style=color:#f92672>=</span> nasdaq_nct_params[<span style=color:#ae81ff>1</span>], loc <span style=color:#f92672>=</span> nasdaq_nct_params[<span style=color:#ae81ff>2</span>], scale <span style=color:#f92672>=</span> nasdaq_nct_params[<span style=color:#ae81ff>3</span>])
-</code></pre></div><p>Generate Uniforms</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>sp500_uni <span style=color:#f92672>=</span> nct<span style=color:#f92672>.</span>cdf(sp500_garch_fit<span style=color:#f92672>.</span>resid, df <span style=color:#f92672>=</span> sp500_nct_params[<span style=color:#ae81ff>0</span>], nc <span style=color:#f92672>=</span> sp500_nct_params[<span style=color:#ae81ff>1</span>], loc <span style=color:#f92672>=</span> sp500_nct_params[<span style=color:#ae81ff>2</span>], scale <span style=color:#f92672>=</span> sp500_nct_params[<span style=color:#ae81ff>3</span>] )
-nasdaq_uni <span style=color:#f92672>=</span> nct<span style=color:#f92672>.</span>cdf(nasdaq_garch_fit<span style=color:#f92672>.</span>resid, df <span style=color:#f92672>=</span> nasdaq_nct_params[<span style=color:#ae81ff>0</span>], nc <span style=color:#f92672>=</span> nasdaq_nct_params[<span style=color:#ae81ff>1</span>], loc <span style=color:#f92672>=</span> nasdaq_nct_params[<span style=color:#ae81ff>2</span>], scale <span style=color:#f92672>=</span> nasdaq_nct_params[<span style=color:#ae81ff>3</span>] )
-</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>plt<span style=color:#f92672>.</span>scatter(sp500_uni, nasdaq_uni)
-</code></pre></div><p><img src=extremes_60_1.png alt=png></p>
-<p>The key point is that the scatterplots on the unit square \([0; 1]\) remove the influence of the marginal distributions. As a consequence they allow us to focus on the dependency structure between the two random variables Z1 (S&P500) and Z2 (Nasdaq).</p>
-<p>To fit a a copula one can do a maximum likelihood estimation. Once can also calculate kendell&rsquo;s tau and estimate the parameter using the estimated kendell&rsquo;s tau as kendell&rsquo;s tau is known for many copulas.</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>clayton</span>(u1, u2, theta):
-
-    <span style=color:#66d9ef>return</span> np<span style=color:#f92672>.</span>power(np<span style=color:#f92672>.</span>power(u1, <span style=color:#f92672>-</span>theta) <span style=color:#f92672>+</span> np<span style=color:#f92672>.</span>power(u2, <span style=color:#f92672>-</span>theta) <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span>, <span style=color:#f92672>-</span><span style=color:#ae81ff>1.0</span> <span style=color:#f92672>/</span> theta)
-</code></pre></div><p>Calculate kendell tau to fit the clayton copula:</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>tau, p_val <span style=color:#f92672>=</span> kendalltau(sp500_uni, nasdaq_uni)
-</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>theta <span style=color:#f92672>=</span> <span style=color:#ae81ff>2</span> <span style=color:#f92672>*</span> tau <span style=color:#f92672>/</span> (<span style=color:#ae81ff>1</span> <span style=color:#f92672>-</span> tau)
-theta
-</code></pre></div><h2 id=simulating-copulas>Simulating Copulas</h2>
-<p>We can simulate from paramteric copulas, using the following conditional probability:</p>
-<p>$$ C_{u_1}(u_2) = P( U_2 &lt; u_2 | U_1 = u_1) = \lim_{h \to 0} \frac{C(u_1 + h,u_2) - C(u_1,u_2)}{h} = \frac{\partial C(u_1, u_2)}{\partial u_1}$$</p>
-<p>The procedure is following:</p>
-<p>Generate random variables \(u_1\) and \(t\) and set \(u_2 =C_{u_1}^{-1}(t)\). The desired dependent pair is \((u_1, u_2)\)</p>
-<p>If we use the Gumbell Copula:</p>
-<p>$$C(u,v) =\exp \Big( - \big( (-\ln u)^\alpha + (-\ln v)^\alpha \big)^{\frac{1}{\alpha}} \Big) $$</p>
-<p>We get:</p>
-<p>$$C_u(u_2) = C(u_1,u_2) * \frac{(-\ln u_1)^{\alpha-1}}{u_1} \Big( (-\ln u_1)^\alpha + (-\ln u_2)^\alpha \big)^{\frac{1}{\alpha}-1}\Big)$$</p>
-<p>Computing the inverse is a bit hard, we need to do it numerically</p>
-<p>Let&rsquo;s simulate them:</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>Gumbel</span>(u,v, alpha):
-    
-
-    <span style=color:#66d9ef>return</span> np<span style=color:#f92672>.</span>exp( <span style=color:#f92672>-</span>(np<span style=color:#f92672>.</span>power(<span style=color:#f92672>-</span>np<span style=color:#f92672>.</span>log(u), alpha) <span style=color:#f92672>+</span> np<span style=color:#f92672>.</span>power(<span style=color:#f92672>-</span>np<span style=color:#f92672>.</span>log(v), alpha)  ) <span style=color:#f92672>**</span> (<span style=color:#ae81ff>1.0</span> <span style=color:#f92672>/</span> alpha))
-
-<span style=color:#66d9ef>def</span> <span style=color:#a6e22e>cond_gumbel</span>(u,v, alpha):
-
-    part1 <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>power(<span style=color:#f92672>-</span>np<span style=color:#f92672>.</span>log(u), alpha <span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>) <span style=color:#f92672>/</span> u
-    part2 <span style=color:#f92672>=</span> ( np<span style=color:#f92672>.</span>power(<span style=color:#f92672>-</span>np<span style=color:#f92672>.</span>log(u), alpha) <span style=color:#f92672>+</span> np<span style=color:#f92672>.</span>power(<span style=color:#f92672>-</span>np<span style=color:#f92672>.</span>log(v), alpha)) <span style=color:#f92672>**</span> ((<span style=color:#ae81ff>1.0</span> <span style=color:#f92672>/</span> alpha) <span style=color:#f92672>-</span> <span style=color:#ae81ff>1.0</span>)
-
-    <span style=color:#66d9ef>return</span> Gumbel(u,v, alpha) <span style=color:#f92672>*</span> part1 <span style=color:#f92672>*</span> part2
-
-
-<span style=color:#66d9ef>def</span> <span style=color:#a6e22e>inverse_obj</span>(v, t, u, alpha):
-    <span style=color:#e6db74>&#34;&#34;&#34;
-</span><span style=color:#e6db74>    Solve C_u(v) = t given u and alpha
-</span><span style=color:#e6db74>    &#34;&#34;&#34;</span>
-
-
-    <span style=color:#66d9ef>return</span> cond_gumbel(v, u, alpha) <span style=color:#f92672>-</span> t
-
-
-<span style=color:#66d9ef>def</span> <span style=color:#a6e22e>inverse</span>(t, u, alpha,):
-
-
-    res <span style=color:#f92672>=</span> brentq(inverse_obj, <span style=color:#ae81ff>1e-16</span>, <span style=color:#ae81ff>1</span>, args <span style=color:#f92672>=</span> (t, u, alpha))
-
-    <span style=color:#66d9ef>return</span> res
-
-inverse_vec <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>vectorize(inverse, excluded<span style=color:#f92672>=</span> (<span style=color:#e6db74>&#39;alpha&#39;</span>, <span style=color:#e6db74>&#39;init_x&#39;</span>))
-
-
-</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>u <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array([<span style=color:#ae81ff>99</span>])
-u
-</code></pre></div><pre><code>array([99])
-</code></pre>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>u <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array([<span style=color:#ae81ff>99</span>])
-v <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array([<span style=color:#ae81ff>99</span>])
-
-<span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(<span style=color:#ae81ff>100</span>):
-
-    u_tmp <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>random<span style=color:#f92672>.</span>uniform(size <span style=color:#f92672>=</span> <span style=color:#ae81ff>10</span>)
-    t <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>random<span style=color:#f92672>.</span>uniform(size <span style=color:#f92672>=</span> <span style=color:#ae81ff>10</span>)
-
-    <span style=color:#75715e># Numerical erros</span>
-    <span style=color:#66d9ef>try</span>:
-        v_tmp <span style=color:#f92672>=</span> inverse_vec(t, u_tmp, <span style=color:#ae81ff>4.0</span>)
-    <span style=color:#66d9ef>except</span> <span style=color:#a6e22e>ValueError</span>:
-        v_tmp <span style=color:#f92672>=</span> <span style=color:#66d9ef>None</span>
-
-    <span style=color:#66d9ef>if</span> <span style=color:#f92672>not</span> v_tmp <span style=color:#f92672>is</span> <span style=color:#66d9ef>None</span>:
-        u <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>hstack((u, u_tmp))
-        v <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>hstack((v, v_tmp))
-
-</code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>plt<span style=color:#f92672>.</span>scatter(u[<span style=color:#ae81ff>1</span>:], v[<span style=color:#ae81ff>1</span>:])
-</code></pre></div><p><img src=extremes_74_1.png alt=png></p>
-</div>
-</div>
-</div>
-<div class="layui-col-md4 layui-col-sm12 layui-col-xs12">
+</code></pre><h2 id=copula-fit>Copula fit</h2><p>First fit the marginals</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>sp500_nct_params <span style=color:#f92672>=</span> nct<span style=color:#f92672>.</span>fit(sp500_garch_fit<span style=color:#f92672>.</span>resid)
+</span></span><span style=display:flex><span>sp500_nct_fit <span style=color:#f92672>=</span> nct<span style=color:#f92672>.</span>pdf(sorted(sp500[<span style=color:#e6db74>&#39;log_return&#39;</span>]), df <span style=color:#f92672>=</span> sp500_nct_params[<span style=color:#ae81ff>0</span>], nc <span style=color:#f92672>=</span> sp500_nct_params[<span style=color:#ae81ff>1</span>], loc <span style=color:#f92672>=</span> sp500_nct_params[<span style=color:#ae81ff>2</span>], scale <span style=color:#f92672>=</span> sp500_nct_params[<span style=color:#ae81ff>3</span>])
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>nasdaq_nct_params <span style=color:#f92672>=</span> nct<span style=color:#f92672>.</span>fit(nasdaq_garch_fit<span style=color:#f92672>.</span>resid)
+</span></span><span style=display:flex><span>nasdaq_nct_fit <span style=color:#f92672>=</span> nct<span style=color:#f92672>.</span>pdf(sorted(nasdaq[<span style=color:#e6db74>&#39;log_return&#39;</span>]), df <span style=color:#f92672>=</span> nasdaq_nct_params[<span style=color:#ae81ff>0</span>], nc <span style=color:#f92672>=</span> nasdaq_nct_params[<span style=color:#ae81ff>1</span>], loc <span style=color:#f92672>=</span> nasdaq_nct_params[<span style=color:#ae81ff>2</span>], scale <span style=color:#f92672>=</span> nasdaq_nct_params[<span style=color:#ae81ff>3</span>])
+</span></span></code></pre></div><p>Generate Uniforms</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>sp500_uni <span style=color:#f92672>=</span> nct<span style=color:#f92672>.</span>cdf(sp500_garch_fit<span style=color:#f92672>.</span>resid, df <span style=color:#f92672>=</span> sp500_nct_params[<span style=color:#ae81ff>0</span>], nc <span style=color:#f92672>=</span> sp500_nct_params[<span style=color:#ae81ff>1</span>], loc <span style=color:#f92672>=</span> sp500_nct_params[<span style=color:#ae81ff>2</span>], scale <span style=color:#f92672>=</span> sp500_nct_params[<span style=color:#ae81ff>3</span>] )
+</span></span><span style=display:flex><span>nasdaq_uni <span style=color:#f92672>=</span> nct<span style=color:#f92672>.</span>cdf(nasdaq_garch_fit<span style=color:#f92672>.</span>resid, df <span style=color:#f92672>=</span> nasdaq_nct_params[<span style=color:#ae81ff>0</span>], nc <span style=color:#f92672>=</span> nasdaq_nct_params[<span style=color:#ae81ff>1</span>], loc <span style=color:#f92672>=</span> nasdaq_nct_params[<span style=color:#ae81ff>2</span>], scale <span style=color:#f92672>=</span> nasdaq_nct_params[<span style=color:#ae81ff>3</span>] )
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>plt<span style=color:#f92672>.</span>scatter(sp500_uni, nasdaq_uni)
+</span></span></code></pre></div><p><img src=extremes_60_1.png alt=png></p><p>The key point is that the scatterplots on the unit square \([0; 1]\) remove the influence of the marginal distributions. As a consequence they allow us to focus on the dependency structure between the two random variables Z1 (S&P500) and Z2 (Nasdaq).</p><p>To fit a a copula one can do a maximum likelihood estimation. Once can also calculate kendell&rsquo;s tau and estimate the parameter using the estimated kendell&rsquo;s tau as kendell&rsquo;s tau is known for many copulas.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>clayton</span>(u1, u2, theta):
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> np<span style=color:#f92672>.</span>power(np<span style=color:#f92672>.</span>power(u1, <span style=color:#f92672>-</span>theta) <span style=color:#f92672>+</span> np<span style=color:#f92672>.</span>power(u2, <span style=color:#f92672>-</span>theta) <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span>, <span style=color:#f92672>-</span><span style=color:#ae81ff>1.0</span> <span style=color:#f92672>/</span> theta)
+</span></span></code></pre></div><p>Calculate kendell tau to fit the clayton copula:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>tau, p_val <span style=color:#f92672>=</span> kendalltau(sp500_uni, nasdaq_uni)
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>theta <span style=color:#f92672>=</span> <span style=color:#ae81ff>2</span> <span style=color:#f92672>*</span> tau <span style=color:#f92672>/</span> (<span style=color:#ae81ff>1</span> <span style=color:#f92672>-</span> tau)
+</span></span><span style=display:flex><span>theta
+</span></span></code></pre></div><h2 id=simulating-copulas>Simulating Copulas</h2><p>We can simulate from paramteric copulas, using the following conditional probability:</p><p>$$ C_{u_1}(u_2) = P( U_2 &lt; u_2 | U_1 = u_1) = \lim_{h \to 0} \frac{C(u_1 + h,u_2) - C(u_1,u_2)}{h} = \frac{\partial C(u_1, u_2)}{\partial u_1}$$</p><p>The procedure is following:</p><p>Generate random variables \(u_1\) and \(t\) and set \(u_2 =C_{u_1}^{-1}(t)\). The desired dependent pair is \((u_1, u_2)\)</p><p>If we use the Gumbell Copula:</p><p>$$C(u,v) =\exp \Big( - \big( (-\ln u)^\alpha + (-\ln v)^\alpha \big)^{\frac{1}{\alpha}} \Big) $$</p><p>We get:</p><p>$$C_u(u_2) = C(u_1,u_2) * \frac{(-\ln u_1)^{\alpha-1}}{u_1} \Big( (-\ln u_1)^\alpha + (-\ln u_2)^\alpha \big)^{\frac{1}{\alpha}-1}\Big)$$</p><p>Computing the inverse is a bit hard, we need to do it numerically</p><p>Let&rsquo;s simulate them:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>Gumbel</span>(u,v, alpha):
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> np<span style=color:#f92672>.</span>exp( <span style=color:#f92672>-</span>(np<span style=color:#f92672>.</span>power(<span style=color:#f92672>-</span>np<span style=color:#f92672>.</span>log(u), alpha) <span style=color:#f92672>+</span> np<span style=color:#f92672>.</span>power(<span style=color:#f92672>-</span>np<span style=color:#f92672>.</span>log(v), alpha)  ) <span style=color:#f92672>**</span> (<span style=color:#ae81ff>1.0</span> <span style=color:#f92672>/</span> alpha))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>cond_gumbel</span>(u,v, alpha):
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    part1 <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>power(<span style=color:#f92672>-</span>np<span style=color:#f92672>.</span>log(u), alpha <span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>) <span style=color:#f92672>/</span> u
+</span></span><span style=display:flex><span>    part2 <span style=color:#f92672>=</span> ( np<span style=color:#f92672>.</span>power(<span style=color:#f92672>-</span>np<span style=color:#f92672>.</span>log(u), alpha) <span style=color:#f92672>+</span> np<span style=color:#f92672>.</span>power(<span style=color:#f92672>-</span>np<span style=color:#f92672>.</span>log(v), alpha)) <span style=color:#f92672>**</span> ((<span style=color:#ae81ff>1.0</span> <span style=color:#f92672>/</span> alpha) <span style=color:#f92672>-</span> <span style=color:#ae81ff>1.0</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> Gumbel(u,v, alpha) <span style=color:#f92672>*</span> part1 <span style=color:#f92672>*</span> part2
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>inverse_obj</span>(v, t, u, alpha):
+</span></span><span style=display:flex><span>    <span style=color:#e6db74>&#34;&#34;&#34;
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>    Solve C_u(v) = t given u and alpha
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>    &#34;&#34;&#34;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> cond_gumbel(v, u, alpha) <span style=color:#f92672>-</span> t
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>inverse</span>(t, u, alpha,):
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    res <span style=color:#f92672>=</span> brentq(inverse_obj, <span style=color:#ae81ff>1e-16</span>, <span style=color:#ae81ff>1</span>, args <span style=color:#f92672>=</span> (t, u, alpha))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> res
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>inverse_vec <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>vectorize(inverse, excluded<span style=color:#f92672>=</span> (<span style=color:#e6db74>&#39;alpha&#39;</span>, <span style=color:#e6db74>&#39;init_x&#39;</span>))
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>u <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array([<span style=color:#ae81ff>99</span>])
+</span></span><span style=display:flex><span>u
+</span></span></code></pre></div><pre><code>array([99])
+</code></pre><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>u <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array([<span style=color:#ae81ff>99</span>])
+</span></span><span style=display:flex><span>v <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array([<span style=color:#ae81ff>99</span>])
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(<span style=color:#ae81ff>100</span>):
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    u_tmp <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>random<span style=color:#f92672>.</span>uniform(size <span style=color:#f92672>=</span> <span style=color:#ae81ff>10</span>)
+</span></span><span style=display:flex><span>    t <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>random<span style=color:#f92672>.</span>uniform(size <span style=color:#f92672>=</span> <span style=color:#ae81ff>10</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#75715e># Numerical erros</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>try</span>:
+</span></span><span style=display:flex><span>        v_tmp <span style=color:#f92672>=</span> inverse_vec(t, u_tmp, <span style=color:#ae81ff>4.0</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>except</span> <span style=color:#a6e22e>ValueError</span>:
+</span></span><span style=display:flex><span>        v_tmp <span style=color:#f92672>=</span> <span style=color:#66d9ef>None</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#f92672>not</span> v_tmp <span style=color:#f92672>is</span> <span style=color:#66d9ef>None</span>:
+</span></span><span style=display:flex><span>        u <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>hstack((u, u_tmp))
+</span></span><span style=display:flex><span>        v <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>hstack((v, v_tmp))
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>plt<span style=color:#f92672>.</span>scatter(u[<span style=color:#ae81ff>1</span>:], v[<span style=color:#ae81ff>1</span>:])
+</span></span></code></pre></div><p><img src=extremes_74_1.png alt=png></p></div></div></div><div class="layui-col-md4 layui-col-sm12 layui-col-xs12">
 <div class="layui-card single-card">
-<h2 class=single-title>Relevant Topics</h2>
-<div style=margin-left:10px>
+<h2 class=single-title>Relevant Topics</h2><div style=margin-left:10px>
 <blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
 <a href=/post/correlationnetwork/>
-<h3>Group Identification in Stock Markets</h3>
-</a>
+<h3>Group Identification in Stock Markets</h3></a>
 <h3 style=margin-top:10px;margin-bottom:10px>
 <i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
 <span>2021-09-16</span>
@@ -446,18 +348,23 @@ v <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array([
 <a href=/tags/risk/>
 <span class="layui-badge layui-bg-orange" style=vertical-align:2px>Risk</span>
 </a>
-</h3>
-</blockquote>
-</div>
-<br>
-</div>
-<div class="layui-card single-card">
-<h2 class=single-title>Recent Posts</h2>
-<div style=margin-left:10px>
+</h3></blockquote></div><br>
+</div><div class="layui-card single-card">
+<h2 class=single-title>Recent Posts</h2><div style=margin-left:10px>
+<blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
+<a href=/post/glm/>
+<h3>Generalized Lienar Models</h3></a>
+<h3 style=margin-top:10px;margin-bottom:10px>
+<i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<span>2022-03-02</span>
+<i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
+<a href=/tags/model/>
+<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Model</span>
+</a>
+</h3></blockquote></div><div style=margin-left:10px>
 <blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
 <a href=/post/hmm/>
-<h3>Hidden Markov Models</h3>
-</a>
+<h3>Hidden Markov Models</h3></a>
 <h3 style=margin-top:10px;margin-bottom:10px>
 <i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
 <span>2022-02-15</span>
@@ -468,14 +375,10 @@ v <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array([
 <a href=/tags/classification/>
 <span class="layui-badge layui-bg-orange" style=vertical-align:2px>Classification</span>
 </a>
-</h3>
-</blockquote>
-</div>
-<div style=margin-left:10px>
+</h3></blockquote></div><div style=margin-left:10px>
 <blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
 <a href=/post/extremes/>
-<h3>Quntitative Risk Analysis</h3>
-</a>
+<h3>Quntitative Risk Analysis</h3></a>
 <h3 style=margin-top:10px;margin-bottom:10px>
 <i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
 <span>2021-11-17</span>
@@ -486,14 +389,10 @@ v <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array([
 <a href=/tags/extremes/>
 <span class="layui-badge layui-bg-orange" style=vertical-align:2px>Extremes</span>
 </a>
-</h3>
-</blockquote>
-</div>
-<div style=margin-left:10px>
+</h3></blockquote></div><div style=margin-left:10px>
 <blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
 <a href=/post/deepkernel/>
-<h3>Deep Graph Kernels</h3>
-</a>
+<h3>Deep Graph Kernels</h3></a>
 <h3 style=margin-top:10px;margin-bottom:10px>
 <i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
 <span>2021-11-16</span>
@@ -507,14 +406,10 @@ v <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array([
 <a href=/tags/kernel/>
 <span class="layui-badge layui-bg-orange" style=vertical-align:2px>Kernel</span>
 </a>
-</h3>
-</blockquote>
-</div>
-<div style=margin-left:10px>
+</h3></blockquote></div><div style=margin-left:10px>
 <blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
 <a href=/post/correlationnetwork/>
-<h3>Group Identification in Stock Markets</h3>
-</a>
+<h3>Group Identification in Stock Markets</h3></a>
 <h3 style=margin-top:10px;margin-bottom:10px>
 <i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
 <span>2021-09-16</span>
@@ -522,36 +417,7 @@ v <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array([
 <a href=/tags/risk/>
 <span class="layui-badge layui-bg-orange" style=vertical-align:2px>Risk</span>
 </a>
-</h3>
-</blockquote>
-</div>
-<div style=margin-left:10px>
-<blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
-<a href=/post/data_visualization/>
-<h3>Data Visualization and Data Reduction</h3>
-</a>
-<h3 style=margin-top:10px;margin-bottom:10px>
-<i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
-<span>2021-08-30</span>
-<i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
-<a href=/tags/visualization/>
-<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Visualization</span>
-</a>
-<a href=/tags/data-analysis/>
-<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Data Analysis</span>
-</a>
-</h3>
-</blockquote>
-</div>
-<br>
-</div>
-</div>
-</div>
-</div>
-</div><footer>
+</h3></blockquote></div><br>
+</div></div></div></div></div><footer>
 <div class=layui-container>
-<p class=copyright>&copy; All rights reserved. Powered by <a href=https://gohugo.io style=color:#fff>Hugo</a>, <a href=https://github.com/ertuil/erblog style=color:#fff>Erblog</a> and <a href=https://github.com/vlunot/nb2hugo style=color:#fff>nb2hugo</a>.</p>
-</div>
-</footer>
-</body>
-</html>
+<p class=copyright>&copy; All rights reserved. Powered by <a href=https://gohugo.io style=color:#fff>Hugo</a>, <a href=https://github.com/ertuil/erblog style=color:#fff>Erblog</a> and <a href=https://github.com/vlunot/nb2hugo style=color:#fff>nb2hugo</a>.</p></div></footer></body></html>
