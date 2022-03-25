@@ -1,5 +1,5 @@
 +++
-title = "Generalized Lienar Models"
+title = "Generalized Linear Models"
 date = "2022-03-02"
 author = "Ragnar Levi Gudmundarson"
 tags = ["Model"]
