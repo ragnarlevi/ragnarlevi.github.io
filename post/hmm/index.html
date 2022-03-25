@@ -1,59 +1,18 @@
-<html>
-<head>
-<meta charset=utf-8>
-<meta name=viewport content="width=device-width,initial-scale=1">
-<title>Ragnar - Hidden Markov Models </title><meta content="Model,Classification" name=keywords>
-<meta content="Ragnar - In this notebook I will be exploring a Hidden Markov Model (HMM) to classify bull and bear states of a simulated financial instrument.
+<html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Ragnar - Hidden Markov Models</title><meta content="Model,Classification" name=keywords><meta content="Ragnar - In this notebook I will be exploring a Hidden Markov Model (HMM) to classify bull and bear states of a simulated financial instrument.
 library(depmixS4) library(ggplot2) library(matrixStats) Simulate the data. Assume returns are normally distributed. Where the mean and the standard deviation depends on the state of the financial market. We will only consider 2 states.
-set.seed(42)  Nk_lower <- 50 Nk_upper <- 150 bull_mean <- 0.1 bull_var <- 0.1 bear_mean <- -0." name=description>
-<meta name=viewport content="width=device-width,initial-scale=1">
-<link rel=stylesheet href=/layui/css/layui.css>
-<link rel=stylesheet href=/self/css/default.css>
-<script src=/layui/layui.js></script>
-<link rel=stylesheet async href=/self/css/markdown.min.css>
-<link rel=stylesheet async href=/self/css/gallery.css>
-<script src=https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin=anonymous></script>
-<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css integrity="sha256-eZrrJcwDc/3uDhsdt61sL2oOBY362qM3lon1gyExkL0=" crossorigin=anonymous>
-<script async src=https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js integrity="sha256-h2tMEmhemR2IN4wbbdNjj9LaDIjzwk2hralQwfJmBOE=" crossorigin=anonymous></script></head><body>
-<header>
-<script type=text/x-mathjax-config>
+set.seed(42)  Nk_lower <- 50 Nk_upper <- 150 bull_mean <- 0.1 bull_var <- 0.1 bear_mean <- -0." name=description><meta name=viewport content="width=device-width,initial-scale=1"><link rel=stylesheet href=/layui/css/layui.css><link rel=stylesheet href=/self/css/default.css><script src=/layui/layui.js></script>
+<link rel=stylesheet async href=/self/css/markdown.min.css><link rel=stylesheet async href=/self/css/gallery.css><script src=https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin=anonymous></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css integrity="sha256-eZrrJcwDc/3uDhsdt61sL2oOBY362qM3lon1gyExkL0=" crossorigin=anonymous><script async src=https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js integrity="sha256-h2tMEmhemR2IN4wbbdNjj9LaDIjzwk2hralQwfJmBOE=" crossorigin=anonymous></script></head><body><header><script type=text/x-mathjax-config>
       MathJax.Hub.Config({"HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"], linebreaks: { automatic:true }, EqnChunk: (MathJax.Hub.Browser.isMobile ? 10 : 50) },
           tex2jax: { inlineMath: [ ["$", "$"], ["\\(", "\\)"] ], displayMath: [ ["$$","$$"], ["\\[", "\\]"] ], processEscapes: true, ignoreClass: "tex2jax_ignore|dno" },
           TeX: {  noUndefined: { attributes: { mathcolor: "red", mathbackground: "#FFEEEE", mathsize: "90%" } } },
           messageStyle: "none"
       });
-  </script>
-<script type=text/javascript src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
-</header><header class="layui-header layui-bg-cyan">
-<a class=nav-self-logo href=/>
-Ragnar
-</a>
-<ul class="layui-nav layui-layout-right layui-bg-cyan" lay-filter>
-<li class=layui-nav-item id=nav_big><a href=/post/>Posts</a></li><li class=layui-nav-item id=nav_big><a href=/about/>About</a></li><li class=layui-nav-item id=nav_small>
-<a href=javascript:;>
-<i class="layui-icon layui-icon-app" style=font-size:24px></i>
-</a>
-<dl class=layui-nav-child>
-<dd><a href=/post/>Posts</a></dd><dd><a href=/about/>About</a></dd></dl></li></ul></header><script>layui.use("element",function(){var e=layui.element})</script>
-<div id=content style=min-height:80%>
-<div class=layui-container style=margin-bottom:10px>
-<div class="layui-row layui-col-space10">
-<div class="layui-col-md8 layui-col-sm12 layui-col-xs12">
-<div class="layui-card single-card">
-<br>
-<blockquote class="self-elem-quote self-elem-quote-bg-red markdown-body single-title">
-<h1>Hidden Markov Models</h1><h3 style=margin-top:10px;margin-bottom:10px>
-<i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+  </script><script type=text/javascript src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script></header><header class="layui-header layui-bg-cyan"><a class=nav-self-logo href=/>Ragnar</a><ul class="layui-nav layui-layout-right layui-bg-cyan" lay-filter><li class=layui-nav-item id=nav_big><a href=/post/>Posts</a></li><li class=layui-nav-item id=nav_big><a href=/about/>About</a></li><li class=layui-nav-item id=nav_small><a href=javascript:;><i class="layui-icon layui-icon-app" style=font-size:24px></i></a><dl class=layui-nav-child><dd><a href=/post/>Posts</a></dd><dd><a href=/about/>About</a></dd></dl></li></ul></header><script>layui.use("element",function(){var e=layui.element})</script><div id=content style=min-height:80%><div class=layui-container style=margin-bottom:10px><div class="layui-row layui-col-space10"><div class="layui-col-md8 layui-col-sm12 layui-col-xs12"><div class="layui-card single-card"><br><blockquote class="self-elem-quote self-elem-quote-bg-red markdown-body single-title"><h1>Hidden Markov Models</h1><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
 <span>2022-02-15</span>
 <i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
-<a href=/tags/model/>
-<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Model</span>
-</a>
-<a href=/tags/classification/>
-<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Classification</span>
-</a>
-</h3></blockquote><div class="layui-card-body markdown-body single-content">
-<p>In this notebook I will be exploring a Hidden Markov Model (HMM) to
+<a href=/tags/model/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Model</span></a>
+<a href=/tags/classification/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Classification</span></a></h3></blockquote><div class="layui-card-body markdown-body single-content"><p>In this notebook I will be exploring a Hidden Markov Model (HMM) to
 classify bull and bear states of a simulated financial instrument.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-r data-lang=r><span style=display:flex><span><span style=color:#a6e22e>library</span>(depmixS4)
 </span></span><span style=display:flex><span><span style=color:#a6e22e>library</span>(ggplot2)
 </span></span><span style=display:flex><span><span style=color:#a6e22e>library</span>(matrixStats)
@@ -171,8 +130,7 @@ recursively as follows:</p><p>$$
 \begin{equation}
 \begin{split}
 \beta_{t-1}(j) &= p(x_{t:T}| z_{t-1} = j ) \\\
-&= \sum_i p(x_{t+1:T}, x_t, z_t = i| z_{t-1} = j ) \\\<br>
-&= \sum_i p(x_{t+1:T} ,| z_t = i) p(x_t | z_t = i) p( z_t = i| z_{t-1} = j )
+&= \sum_i p(x_{t+1:T}, x_t, z_t = i| z_{t-1} = j ) \\\<br>&= \sum_i p(x_{t+1:T} ,| z_t = i) p(x_t | z_t = i) p( z_t = i| z_{t-1} = j )
 \end{split}
 \end{equation}
 $$</p><p>We can write this in a matrix form
@@ -264,8 +222,7 @@ $$</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:
 see that we get more confident in our estimation. Instead of using the
 forward-backward algorithm we can compute the most probable sequence of
 states using the viterbi algorithm:
-$$\boldsymbol{z}^{*} =\arg\max_{z_{1:T}} p(z_{1:T} | x_{1:T}) $$
-</p><p>Note that the jointly most probable sequence of states (Viterbi) is not
+$$\boldsymbol{z}^{*} =\arg\max_{z_{1:T}} p(z_{1:T} | x_{1:T}) $$</p><p>Note that the jointly most probable sequence of states (Viterbi) is not
 necessarily the same as the sequence of marginally most probable states
 (if we maximize forward-backwards).
 $$\arg\max_{z_{1:T}} p(z_{1:T} | x_{1:T})\neq\Big(\arg\max_{z_1} p(z_1 | x_{1:T}),\dots, arg\max_{z_T} p(z_T | x_{1:T})\Big)$$
@@ -274,8 +231,7 @@ over allpossible previous state sequences. Given that we had already
 computed the probability of being in every state at time $t-1$
 , we compute the Viterbi probability by taking the most probable of the
 extensions of the paths that lead to the current cell:
-$$m_t(j) =\max_{z_{t-1} = i} m_{t-1}(i) Z_{ij} p(x_t | z_t =j) $$
-</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-r data-lang=r><span style=display:flex><span>viterbi <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>function</span>(init_a, Z, phi, x){
+$$m_t(j) =\max_{z_{t-1} = i} m_{t-1}(i) Z_{ij} p(x_t | z_t =j) $$</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-r data-lang=r><span style=display:flex><span>viterbi <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>function</span>(init_a, Z, phi, x){
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>  best_state <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>matrix</span>(<span style=color:#ae81ff>0</span>, ncol <span style=color:#f92672>=</span> <span style=color:#a6e22e>length</span>(x), nrow <span style=color:#f92672>=</span> <span style=color:#a6e22e>length</span>(init_a))
 </span></span><span style=display:flex><span>
@@ -422,95 +378,28 @@ probability of the states. The</p><div class=highlight><pre tabindex=0 style=col
 </span></span><span style=display:flex><span>  <span style=color:#a6e22e>scale_color_manual</span>(name<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;State&#39;</span>,
 </span></span><span style=display:flex><span>                     breaks<span style=color:#f92672>=</span><span style=color:#a6e22e>c</span>(<span style=color:#e6db74>&#39;Bear&#39;</span>, <span style=color:#e6db74>&#39;Bull&#39;</span>),
 </span></span><span style=display:flex><span>                     values<span style=color:#f92672>=</span><span style=color:#a6e22e>c</span>(<span style=color:#e6db74>&#39;Bear&#39;</span><span style=color:#f92672>=</span><span style=color:#e6db74>&#39;red&#39;</span>, <span style=color:#e6db74>&#39;Bull&#39;</span><span style=color:#f92672>=</span><span style=color:#e6db74>&#39;darkgreen&#39;</span>))
-</span></span></code></pre></div><p><img src=unnamed-chunk-12-1.png alt></p></div></div></div><div class="layui-col-md4 layui-col-sm12 layui-col-xs12">
-<div class="layui-card single-card">
-<h2 class=single-title>Relevant Topics</h2><div style=margin-left:10px>
-<blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
-<a href=/post/deepkernel/>
-<h3>Deep Graph Kernels</h3></a>
-<h3 style=margin-top:10px;margin-bottom:10px>
-<i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+</span></span></code></pre></div><p><img src=unnamed-chunk-12-1.png alt></p></div></div></div><div class="layui-col-md4 layui-col-sm12 layui-col-xs12"><div class="layui-card single-card"><h2 class=single-title>Relevant Topics</h2><div style=margin-left:10px><blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px><a href=/post/deepkernel/><h3>Deep Graph Kernels</h3></a><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
 <span>2021-11-16</span>
 <i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
-<a href=/tags/graph/>
-<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Graph</span>
-</a>
-<a href=/tags/classification/>
-<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Classification</span>
-</a>
-<a href=/tags/kernel/>
-<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Kernel</span>
-</a>
-</h3></blockquote></div><br>
-</div><div class="layui-card single-card">
-<h2 class=single-title>Recent Posts</h2><div style=margin-left:10px>
-<blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
-<a href=/post/glm/>
-<h3>Generalized Lienar Models</h3></a>
-<h3 style=margin-top:10px;margin-bottom:10px>
-<i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<a href=/tags/graph/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Graph</span></a>
+<a href=/tags/classification/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Classification</span></a>
+<a href=/tags/kernel/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Kernel</span></a></h3></blockquote></div><br></div><div class="layui-card single-card"><h2 class=single-title>Recent Posts</h2><div style=margin-left:10px><blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px><a href=/post/glm/><h3>Generalized Linear Models</h3></a><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
 <span>2022-03-02</span>
 <i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
-<a href=/tags/model/>
-<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Model</span>
-</a>
-</h3></blockquote></div><div style=margin-left:10px>
-<blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
-<a href=/post/hmm/>
-<h3>Hidden Markov Models</h3></a>
-<h3 style=margin-top:10px;margin-bottom:10px>
-<i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<a href=/tags/model/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Model</span></a></h3></blockquote></div><div style=margin-left:10px><blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px><a href=/post/hmm/><h3>Hidden Markov Models</h3></a><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
 <span>2022-02-15</span>
 <i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
-<a href=/tags/model/>
-<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Model</span>
-</a>
-<a href=/tags/classification/>
-<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Classification</span>
-</a>
-</h3></blockquote></div><div style=margin-left:10px>
-<blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
-<a href=/post/extremes/>
-<h3>Quntitative Risk Analysis</h3></a>
-<h3 style=margin-top:10px;margin-bottom:10px>
-<i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<a href=/tags/model/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Model</span></a>
+<a href=/tags/classification/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Classification</span></a></h3></blockquote></div><div style=margin-left:10px><blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px><a href=/post/extremes/><h3>Quntitative Risk Analysis</h3></a><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
 <span>2021-11-17</span>
 <i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
-<a href=/tags/risk/>
-<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Risk</span>
-</a>
-<a href=/tags/extremes/>
-<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Extremes</span>
-</a>
-</h3></blockquote></div><div style=margin-left:10px>
-<blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
-<a href=/post/deepkernel/>
-<h3>Deep Graph Kernels</h3></a>
-<h3 style=margin-top:10px;margin-bottom:10px>
-<i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<a href=/tags/risk/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Risk</span></a>
+<a href=/tags/extremes/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Extremes</span></a></h3></blockquote></div><div style=margin-left:10px><blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px><a href=/post/deepkernel/><h3>Deep Graph Kernels</h3></a><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
 <span>2021-11-16</span>
 <i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
-<a href=/tags/graph/>
-<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Graph</span>
-</a>
-<a href=/tags/classification/>
-<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Classification</span>
-</a>
-<a href=/tags/kernel/>
-<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Kernel</span>
-</a>
-</h3></blockquote></div><div style=margin-left:10px>
-<blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
-<a href=/post/correlationnetwork/>
-<h3>Group Identification in Stock Markets</h3></a>
-<h3 style=margin-top:10px;margin-bottom:10px>
-<i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<a href=/tags/graph/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Graph</span></a>
+<a href=/tags/classification/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Classification</span></a>
+<a href=/tags/kernel/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Kernel</span></a></h3></blockquote></div><div style=margin-left:10px><blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px><a href=/post/correlationnetwork/><h3>Group Identification in Stock Markets</h3></a><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
 <span>2021-09-16</span>
 <i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
-<a href=/tags/risk/>
-<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Risk</span>
-</a>
-</h3></blockquote></div><br>
-</div></div></div></div></div><footer>
-<div class=layui-container>
-<p class=copyright>&copy; All rights reserved. Powered by <a href=https://gohugo.io style=color:#fff>Hugo</a>, <a href=https://github.com/ertuil/erblog style=color:#fff>Erblog</a> and <a href=https://github.com/vlunot/nb2hugo style=color:#fff>nb2hugo</a>.</p></div></footer></body></html>
+<a href=/tags/risk/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Risk</span></a></h3></blockquote></div><br></div></div></div></div></div><footer><div class=layui-container><p class=copyright>&copy; All rights reserved. Powered by <a href=https://gohugo.io style=color:#fff>Hugo</a>, <a href=https://github.com/ertuil/erblog style=color:#fff>Erblog</a> and <a href=https://github.com/vlunot/nb2hugo style=color:#fff>nb2hugo</a>.</p></div></footer></body></html>

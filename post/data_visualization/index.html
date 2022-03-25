@@ -1,57 +1,16 @@
-<html>
-<head>
-<meta charset=utf-8>
-<meta name=viewport content="width=device-width,initial-scale=1">
-<title>Ragnar - Data Visualization and Data Reduction </title><meta content="Visualization,Data Analysis" name=keywords>
-<meta content="Ragnar - Introduction In this notebook I will be trying out some dimensionality reduction techniques which can be used for modelling and/or data visualization. Dimensional reduction occupies a central position in many fields. In essence, the goal is to change the representation of data sets, originally in a form involving a large number of variables, into a low-dimensional description. The main difference between data reduction and data visualization is that some data visualization techniques can not be used on unseen data, thus they will not be useful in the modelling part." name=description>
-<meta name=viewport content="width=device-width,initial-scale=1">
-<link rel=stylesheet href=/layui/css/layui.css>
-<link rel=stylesheet href=/self/css/default.css>
-<script src=/layui/layui.js></script>
-<link rel=stylesheet async href=/self/css/markdown.min.css>
-<link rel=stylesheet async href=/self/css/gallery.css>
-<script src=https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin=anonymous></script>
-<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css integrity="sha256-eZrrJcwDc/3uDhsdt61sL2oOBY362qM3lon1gyExkL0=" crossorigin=anonymous>
-<script async src=https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js integrity="sha256-h2tMEmhemR2IN4wbbdNjj9LaDIjzwk2hralQwfJmBOE=" crossorigin=anonymous></script></head><body>
-<header>
-<script type=text/x-mathjax-config>
+<html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Ragnar - Data Visualization and Data Reduction</title><meta content="Visualization,Data Analysis" name=keywords><meta content="Ragnar - Introduction In this notebook I will be trying out some dimensionality reduction techniques which can be used for modelling and/or data visualization. Dimensional reduction occupies a central position in many fields. In essence, the goal is to change the representation of data sets, originally in a form involving a large number of variables, into a low-dimensional description. The main difference between data reduction and data visualization is that some data visualization techniques can not be used on unseen data, thus they will not be useful in the modelling part." name=description><meta name=viewport content="width=device-width,initial-scale=1"><link rel=stylesheet href=/layui/css/layui.css><link rel=stylesheet href=/self/css/default.css><script src=/layui/layui.js></script>
+<link rel=stylesheet async href=/self/css/markdown.min.css><link rel=stylesheet async href=/self/css/gallery.css><script src=https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin=anonymous></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css integrity="sha256-eZrrJcwDc/3uDhsdt61sL2oOBY362qM3lon1gyExkL0=" crossorigin=anonymous><script async src=https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js integrity="sha256-h2tMEmhemR2IN4wbbdNjj9LaDIjzwk2hralQwfJmBOE=" crossorigin=anonymous></script></head><body><header><script type=text/x-mathjax-config>
       MathJax.Hub.Config({"HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"], linebreaks: { automatic:true }, EqnChunk: (MathJax.Hub.Browser.isMobile ? 10 : 50) },
           tex2jax: { inlineMath: [ ["$", "$"], ["\\(", "\\)"] ], displayMath: [ ["$$","$$"], ["\\[", "\\]"] ], processEscapes: true, ignoreClass: "tex2jax_ignore|dno" },
           TeX: {  noUndefined: { attributes: { mathcolor: "red", mathbackground: "#FFEEEE", mathsize: "90%" } } },
           messageStyle: "none"
       });
-  </script>
-<script type=text/javascript src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
-</header><header class="layui-header layui-bg-cyan">
-<a class=nav-self-logo href=/>
-Ragnar
-</a>
-<ul class="layui-nav layui-layout-right layui-bg-cyan" lay-filter>
-<li class=layui-nav-item id=nav_big><a href=/post/>Posts</a></li><li class=layui-nav-item id=nav_big><a href=/about/>About</a></li><li class=layui-nav-item id=nav_small>
-<a href=javascript:;>
-<i class="layui-icon layui-icon-app" style=font-size:24px></i>
-</a>
-<dl class=layui-nav-child>
-<dd><a href=/post/>Posts</a></dd><dd><a href=/about/>About</a></dd></dl></li></ul></header><script>layui.use("element",function(){var e=layui.element})</script>
-<div id=content style=min-height:80%>
-<div class=layui-container style=margin-bottom:10px>
-<div class="layui-row layui-col-space10">
-<div class="layui-col-md8 layui-col-sm12 layui-col-xs12">
-<div class="layui-card single-card">
-<br>
-<blockquote class="self-elem-quote self-elem-quote-bg-red markdown-body single-title">
-<h1>Data Visualization and Data Reduction</h1><h3 style=margin-top:10px;margin-bottom:10px>
-<i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+  </script><script type=text/javascript src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script></header><header class="layui-header layui-bg-cyan"><a class=nav-self-logo href=/>Ragnar</a><ul class="layui-nav layui-layout-right layui-bg-cyan" lay-filter><li class=layui-nav-item id=nav_big><a href=/post/>Posts</a></li><li class=layui-nav-item id=nav_big><a href=/about/>About</a></li><li class=layui-nav-item id=nav_small><a href=javascript:;><i class="layui-icon layui-icon-app" style=font-size:24px></i></a><dl class=layui-nav-child><dd><a href=/post/>Posts</a></dd><dd><a href=/about/>About</a></dd></dl></li></ul></header><script>layui.use("element",function(){var e=layui.element})</script><div id=content style=min-height:80%><div class=layui-container style=margin-bottom:10px><div class="layui-row layui-col-space10"><div class="layui-col-md8 layui-col-sm12 layui-col-xs12"><div class="layui-card single-card"><br><blockquote class="self-elem-quote self-elem-quote-bg-red markdown-body single-title"><h1>Data Visualization and Data Reduction</h1><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
 <span>2021-08-30</span>
 <i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
-<a href=/tags/visualization/>
-<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Visualization</span>
-</a>
-<a href=/tags/data-analysis/>
-<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Data Analysis</span>
-</a>
-</h3></blockquote><div class="layui-card-body markdown-body single-content">
-<h1 id=introduction>Introduction</h1><p>In this notebook I will be trying out some dimensionality reduction techniques which can be used for modelling and/or data visualization. Dimensional reduction occupies a central position in many fields. In essence, the goal is to change the representation of data sets, originally in a form involving a large number of variables, into a low-dimensional description. The main difference between data reduction and data visualization is that some data visualization techniques can not be used on unseen data, thus they will not be useful in the modelling part. Data visualization is still an import aspect in every modelling task as discovering patterns at an early stage helps to guide the next steps of data science. If categories are well-separated the visualization method, machine learning is likely to be able to find a mapping from an unseen new data point to its value. Given the right prediction algorithm, we can then expect to achieve high accuracy.</p><p>The methods can be either linear or nonlinear. Non-linear methods are often used as data points seldom live on linear manifolds. However, non-linear methods can be very sensitive to hyper-parameters. We also want the methods to preserve local structures because in many applications, distances of points that are far apart are meaningless, and therefore need not be preserved. We should keep in mind that since we often have many knobs to tune, we can easily fall into the trap of over-tuning until we see what you wanted to see. This is especially true for the non-linear method.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#f92672>import</span> pandas <span style=color:#66d9ef>as</span> pd
+<a href=/tags/visualization/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Visualization</span></a>
+<a href=/tags/data-analysis/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Data Analysis</span></a></h3></blockquote><div class="layui-card-body markdown-body single-content"><h1 id=introduction>Introduction</h1><p>In this notebook I will be trying out some dimensionality reduction techniques which can be used for modelling and/or data visualization. Dimensional reduction occupies a central position in many fields. In essence, the goal is to change the representation of data sets, originally in a form involving a large number of variables, into a low-dimensional description. The main difference between data reduction and data visualization is that some data visualization techniques can not be used on unseen data, thus they will not be useful in the modelling part. Data visualization is still an import aspect in every modelling task as discovering patterns at an early stage helps to guide the next steps of data science. If categories are well-separated the visualization method, machine learning is likely to be able to find a mapping from an unseen new data point to its value. Given the right prediction algorithm, we can then expect to achieve high accuracy.</p><p>The methods can be either linear or nonlinear. Non-linear methods are often used as data points seldom live on linear manifolds. However, non-linear methods can be very sensitive to hyper-parameters. We also want the methods to preserve local structures because in many applications, distances of points that are far apart are meaningless, and therefore need not be preserved. We should keep in mind that since we often have many knobs to tune, we can easily fall into the trap of over-tuning until we see what you wanted to see. This is especially true for the non-linear method.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#f92672>import</span> pandas <span style=color:#66d9ef>as</span> pd
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span><span style=color:#f92672>import</span> numpy <span style=color:#66d9ef>as</span> np
 </span></span><span style=display:flex><span>
@@ -874,76 +833,23 @@ Goblin     13      2     7     46     14     43
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span>embedding_tsne <span style=color:#f92672>=</span> TSNE(n_components<span style=color:#f92672>=</span><span style=color:#ae81ff>2</span>, learning_rate<span style=color:#f92672>=</span><span style=color:#ae81ff>200</span>, perplexity<span style=color:#f92672>=</span><span style=color:#ae81ff>30</span>, early_exaggeration<span style=color:#f92672>=</span><span style=color:#ae81ff>12</span>)<span style=color:#f92672>.</span>fit_transform(data_numbers)
 </span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>plot_embedding(embedding_tsne, color_map)
-</span></span></code></pre></div><p><img src=output_61_0.png alt=png></p></div></div></div><div class="layui-col-md4 layui-col-sm12 layui-col-xs12">
-<div class="layui-card single-card">
-<h2 class=single-title>Recent Posts</h2><div style=margin-left:10px>
-<blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
-<a href=/post/glm/>
-<h3>Generalized Lienar Models</h3></a>
-<h3 style=margin-top:10px;margin-bottom:10px>
-<i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+</span></span></code></pre></div><p><img src=output_61_0.png alt=png></p></div></div></div><div class="layui-col-md4 layui-col-sm12 layui-col-xs12"><div class="layui-card single-card"><h2 class=single-title>Recent Posts</h2><div style=margin-left:10px><blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px><a href=/post/glm/><h3>Generalized Linear Models</h3></a><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
 <span>2022-03-02</span>
 <i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
-<a href=/tags/model/>
-<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Model</span>
-</a>
-</h3></blockquote></div><div style=margin-left:10px>
-<blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
-<a href=/post/hmm/>
-<h3>Hidden Markov Models</h3></a>
-<h3 style=margin-top:10px;margin-bottom:10px>
-<i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<a href=/tags/model/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Model</span></a></h3></blockquote></div><div style=margin-left:10px><blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px><a href=/post/hmm/><h3>Hidden Markov Models</h3></a><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
 <span>2022-02-15</span>
 <i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
-<a href=/tags/model/>
-<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Model</span>
-</a>
-<a href=/tags/classification/>
-<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Classification</span>
-</a>
-</h3></blockquote></div><div style=margin-left:10px>
-<blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
-<a href=/post/extremes/>
-<h3>Quntitative Risk Analysis</h3></a>
-<h3 style=margin-top:10px;margin-bottom:10px>
-<i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<a href=/tags/model/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Model</span></a>
+<a href=/tags/classification/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Classification</span></a></h3></blockquote></div><div style=margin-left:10px><blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px><a href=/post/extremes/><h3>Quntitative Risk Analysis</h3></a><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
 <span>2021-11-17</span>
 <i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
-<a href=/tags/risk/>
-<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Risk</span>
-</a>
-<a href=/tags/extremes/>
-<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Extremes</span>
-</a>
-</h3></blockquote></div><div style=margin-left:10px>
-<blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
-<a href=/post/deepkernel/>
-<h3>Deep Graph Kernels</h3></a>
-<h3 style=margin-top:10px;margin-bottom:10px>
-<i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<a href=/tags/risk/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Risk</span></a>
+<a href=/tags/extremes/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Extremes</span></a></h3></blockquote></div><div style=margin-left:10px><blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px><a href=/post/deepkernel/><h3>Deep Graph Kernels</h3></a><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
 <span>2021-11-16</span>
 <i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
-<a href=/tags/graph/>
-<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Graph</span>
-</a>
-<a href=/tags/classification/>
-<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Classification</span>
-</a>
-<a href=/tags/kernel/>
-<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Kernel</span>
-</a>
-</h3></blockquote></div><div style=margin-left:10px>
-<blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px>
-<a href=/post/correlationnetwork/>
-<h3>Group Identification in Stock Markets</h3></a>
-<h3 style=margin-top:10px;margin-bottom:10px>
-<i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<a href=/tags/graph/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Graph</span></a>
+<a href=/tags/classification/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Classification</span></a>
+<a href=/tags/kernel/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Kernel</span></a></h3></blockquote></div><div style=margin-left:10px><blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px><a href=/post/correlationnetwork/><h3>Group Identification in Stock Markets</h3></a><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
 <span>2021-09-16</span>
 <i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
-<a href=/tags/risk/>
-<span class="layui-badge layui-bg-orange" style=vertical-align:2px>Risk</span>
-</a>
-</h3></blockquote></div><br>
-</div></div></div></div></div><footer>
-<div class=layui-container>
-<p class=copyright>&copy; All rights reserved. Powered by <a href=https://gohugo.io style=color:#fff>Hugo</a>, <a href=https://github.com/ertuil/erblog style=color:#fff>Erblog</a> and <a href=https://github.com/vlunot/nb2hugo style=color:#fff>nb2hugo</a>.</p></div></footer></body></html>
+<a href=/tags/risk/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Risk</span></a></h3></blockquote></div><br></div></div></div></div></div><footer><div class=layui-container><p class=copyright>&copy; All rights reserved. Powered by <a href=https://gohugo.io style=color:#fff>Hugo</a>, <a href=https://github.com/ertuil/erblog style=color:#fff>Erblog</a> and <a href=https://github.com/vlunot/nb2hugo style=color:#fff>nb2hugo</a>.</p></div></footer></body></html>
