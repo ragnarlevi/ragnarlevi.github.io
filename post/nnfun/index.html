@@ -1,0 +1,557 @@
+<html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Ragnar - Neural Networks for Insurance Pricing</title><meta content="Model" name=keywords><meta content="Ragnar - In this notebook we will be looking at a typicall insurance pricing data set and test GLM and NN models. A typical assumption is that the repsone is poisson: $$ P(Y = y) = \frac{\lambda^y \exp(-\lambda)}{y!}$$ To note a shortcoming of the Poisson distribution is that the mean is equal to the variance, and thus one might use quasi-Poisson or a negative binomial instead. Another shortcoming is that insurance claims are usally zero inflated and thus a zero-inflated poisson model or a hurdle poisson model might be used instead." name=description><meta name=viewport content="width=device-width,initial-scale=1"><link rel=stylesheet href=/layui/css/layui.css><link rel=stylesheet href=/self/css/default.css><script src=/layui/layui.js></script>
+<link rel=stylesheet async href=/self/css/markdown.min.css><link rel=stylesheet async href=/self/css/gallery.css><script src=https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin=anonymous></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css integrity="sha256-eZrrJcwDc/3uDhsdt61sL2oOBY362qM3lon1gyExkL0=" crossorigin=anonymous><script async src=https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js integrity="sha256-h2tMEmhemR2IN4wbbdNjj9LaDIjzwk2hralQwfJmBOE=" crossorigin=anonymous></script></head><body><header><script type=text/x-mathjax-config>
+      MathJax.Hub.Config({"HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"], linebreaks: { automatic:true }, EqnChunk: (MathJax.Hub.Browser.isMobile ? 10 : 50) },
+          tex2jax: { inlineMath: [ ["$", "$"], ["\\(", "\\)"] ], displayMath: [ ["$$","$$"], ["\\[", "\\]"] ], processEscapes: true, ignoreClass: "tex2jax_ignore|dno" },
+          TeX: {  noUndefined: { attributes: { mathcolor: "red", mathbackground: "#FFEEEE", mathsize: "90%" } } },
+          messageStyle: "none"
+      });
+  </script><script type=text/javascript src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script></header><header class="layui-header layui-bg-cyan"><a class=nav-self-logo href=/>Ragnar</a><ul class="layui-nav layui-layout-right layui-bg-cyan" lay-filter><li class=layui-nav-item id=nav_big><a href=/post/>Posts</a></li><li class=layui-nav-item id=nav_big><a href=/about/>About</a></li><li class=layui-nav-item id=nav_small><a href=javascript:;><i class="layui-icon layui-icon-app" style=font-size:24px></i></a><dl class=layui-nav-child><dd><a href=/post/>Posts</a></dd><dd><a href=/about/>About</a></dd></dl></li></ul></header><script>layui.use("element",function(){var e=layui.element})</script><div id=content style=min-height:80%><div class=layui-container style=margin-bottom:10px><div class="layui-row layui-col-space10"><div class="layui-col-md8 layui-col-sm12 layui-col-xs12"><div class="layui-card single-card"><br><blockquote class="self-elem-quote self-elem-quote-bg-red markdown-body single-title"><h1>Neural Networks for Insurance Pricing</h1><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<span>2022-04-11</span>
+<i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
+<a href=/tags/model/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Model</span></a></h3></blockquote><div class="layui-card-body markdown-body single-content"><p>In this notebook we will be looking at a typicall insurance pricing data set and test GLM and NN models. A typical assumption is that the repsone is poisson:
+$$ P(Y = y) = \frac{\lambda^y \exp(-\lambda)}{y!}$$
+To note a shortcoming of the Poisson distribution is that the mean is equal to the variance, and thus one might use quasi-Poisson or a negative binomial instead. Another shortcoming is that insurance claims are usally zero inflated and thus a zero-inflated poisson model or a hurdle poisson model might be used instead. We will not consider any of those models as this notebook is simply testing some NN&rsquo;s and compare them to a simple GLM.</p><p>In a Poisson regression, the canonical link function is given by the logarithm:</p><p>$$ g(\lambda) = \log \lambda = x^T\beta$$</p><p>which is same as saying that the probability is given by an exponential function</p><p>$$\lambda = e^{ x^T\beta}$$
+This is what makes glms so interpretable, we can simply think of the covariates as a multiplication factors with different weights.</p><p>Given a sample $(x_i, y_i)_{i=1}^n$, the log-likelihood is:</p><p>$$l(\beta) = \sum_i \Big(y_i log\lambda - \lambda - \log y! \Big) $$</p><p>or
+$$l(\beta) = \sum_i \Big(y_i x^T\beta - e^{x^T\beta} - \log y! \Big) $$</p><p>The $l$ is differentible so it is possible to train the model by some gradient descent methods. Once a model has been fit we can assess the goodness-of-fit of a model is to compare its log-likelihood with that of a saturated model. The relevant test statistic, called the deviance, is defined by:</p><p>$$D = 2 \Big(l(\beta_{max}) - l(\hat{\beta}) \Big) $$</p><p>where $\beta_{max}$ is obtained by having one parameter for each data point, resulting in $\hat{\pi}_i = y_i$ and a perfect fit. $\hat{\beta}$ are the estimate parameters of our model.</p><p>The idea of Neural networks is to estimate the function $f:x \mapsto y$ by using multiple function layers. If there are $K$ layers then we define the $k$ layer function $f^{(k)}: R^{q_{k-1}} \mapsto R^{q_{k}}$ using $f^{(k)}(z^{(k-1)}) = \phi_k(Wz^{(k-1)})$ where $W$ is a matrix, $q_k$ is the dimension of hidden layer $k$ and $\phi_k$ is called an activation function. Note that $f^{(k)}$ returns a vector. We can also write this as</p><p>$$f^{(k)}: z^{k-1} \mapsto z^{k}: f^{(k)}(z^{(k-1)}) = \Big[ \phi_{k_1}([Wz^{(k-1)}]<em>{1}), \dots, \phi</em>{q_k} ([Wz^{(k-1)}]_{q_k}) \Big]^T$$</p><p>There are multiple choices for $\phi_k$ such as the sigmoid, Which is not advisable to be used as the activation function for several layers as it is likely to encounter the problem of vanishing gradients, Hyperbolic functions: which might also lead to the vanishing gradient problem, thus it is recommended to use it only for layers close to the output layer, ReLu and eLu. <a href=https://ml-cheatsheet.readthedocs.io/en/latest/activation_functions.html#elu>ML cheatsheet</a></p><p>Note that $z^{(0)} = x $ and $z^{(K)} = y $ so we can see that if we set $K=1$ and use a exponential activation we simply get the Poisson regression.</p><p>Let&rsquo;s start by comparing Poisson regression and NN single layer regression.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-r data-lang=r><span style=display:flex><span><span style=color:#a6e22e>library</span>(tidyverse)
+</span></span></code></pre></div><pre><code>## -- Attaching packages --------------------------------------- tidyverse 1.3.1 --
+
+## v ggplot2 3.3.5     v purrr   0.3.4
+## v tibble  3.1.6     v dplyr   1.0.8
+## v tidyr   1.2.0     v stringr 1.4.0
+## v readr   2.1.2     v forcats 0.5.1
+
+## -- Conflicts ------------------------------------------ tidyverse_conflicts() --
+## x dplyr::filter() masks stats::filter()
+## x dplyr::lag()    masks stats::lag()
+</code></pre><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-r data-lang=r><span style=display:flex><span><span style=color:#a6e22e>library</span>(keras)
+</span></span><span style=display:flex><span><span style=color:#a6e22e>library</span>(tfdatasets)
+</span></span><span style=display:flex><span><span style=color:#a6e22e>library</span>(stats)
+</span></span><span style=display:flex><span><span style=color:#a6e22e>library</span>(MASS)
+</span></span></code></pre></div><pre><code>## 
+## Attaching package: 'MASS'
+
+## The following object is masked from 'package:dplyr':
+## 
+##     select
+</code></pre><p>I will preprocess the data by scaling the continuous features. This is
+mainly important for the NN as otherwise we might have a vanishing
+gradient problem</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-r data-lang=r><span style=display:flex><span><span style=color:#a6e22e>set.seed</span>(<span style=color:#ae81ff>121</span>)
+</span></span><span style=display:flex><span>mtpl <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>read.csv</span>(<span style=color:#e6db74>&#34;freMTPL2freq.csv&#34;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>PreProcess.Continuous <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>function</span>(data) <span style=color:#ae81ff>2</span><span style=color:#f92672>*</span>(data<span style=color:#f92672>-</span><span style=color:#a6e22e>min</span>(data))<span style=color:#f92672>/</span>(<span style=color:#a6e22e>max</span>(data)<span style=color:#f92672>-</span><span style=color:#a6e22e>min</span>(data))<span style=color:#ae81ff>-1</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>mtpl<span style=color:#f92672>$</span>VehPower <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>PreProcess.Continuous</span>(mtpl<span style=color:#f92672>$</span>VehPower)
+</span></span><span style=display:flex><span>mtpl<span style=color:#f92672>$</span>Density <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>PreProcess.Continuous</span>(<span style=color:#a6e22e>round</span>(<span style=color:#a6e22e>log</span>(mtpl<span style=color:#f92672>$</span>Density),<span style=color:#ae81ff>2</span>))
+</span></span><span style=display:flex><span>mtpl<span style=color:#f92672>$</span>DrivAge <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>PreProcess.Continuous</span>(<span style=color:#a6e22e>pmin</span>(mtpl<span style=color:#f92672>$</span>DrivAge,<span style=color:#ae81ff>90</span>))
+</span></span><span style=display:flex><span>mtpl<span style=color:#f92672>$</span>VehAge <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>PreProcess.Continuous</span>(<span style=color:#a6e22e>pmin</span>(mtpl<span style=color:#f92672>$</span>VehAge,<span style=color:#ae81ff>20</span>))
+</span></span><span style=display:flex><span>mtpl<span style=color:#f92672>$</span>ClaimNb <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>pmin</span>(mtpl<span style=color:#f92672>$</span>ClaimNb, <span style=color:#ae81ff>5</span>)  <span style=color:#75715e># truncate abnormal claim counts</span>
+</span></span><span style=display:flex><span>mtpl<span style=color:#f92672>$</span>Exposure <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>pmin</span>(mtpl<span style=color:#f92672>$</span>Exposure, <span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>mtpl<span style=color:#f92672>$</span>Area <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>as.factor</span>(mtpl<span style=color:#f92672>$</span>Area)
+</span></span><span style=display:flex><span>mtpl<span style=color:#f92672>$</span>VehBrand <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>as.factor</span>(mtpl<span style=color:#f92672>$</span>VehBrand)
+</span></span><span style=display:flex><span>mtpl<span style=color:#f92672>$</span>Region <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>as.factor</span>(mtpl<span style=color:#f92672>$</span>Region)
+</span></span><span style=display:flex><span><span style=color:#75715e># The bonus malus is a bit weird, multiple classes with very few observatins. We remove them</span>
+</span></span><span style=display:flex><span>mtpl<span style=color:#f92672>$</span>BonusMalus <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>as.factor</span>(<span style=color:#a6e22e>pmin</span>(mtpl<span style=color:#f92672>$</span>BonusMalus, <span style=color:#ae81ff>150</span>))
+</span></span><span style=display:flex><span>mtpl <span style=color:#f92672>&lt;-</span> mtpl[mtpl<span style=color:#f92672>$</span>BonusMalus <span style=color:#f92672>%in%</span> <span style=color:#a6e22e>names</span>(<span style=color:#a6e22e>table</span>(mtpl<span style=color:#f92672>$</span>BonusMalus))<span style=color:#a6e22e>[table</span>(mtpl<span style=color:#f92672>$</span>BonusMalus)<span style=color:#f92672>&gt;</span><span style=color:#ae81ff>10</span>], ]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>ggplot</span>(mtpl)<span style=color:#f92672>+</span><span style=color:#a6e22e>geom_histogram</span>(<span style=color:#a6e22e>aes</span>(ClaimNb))<span style=color:#f92672>+</span><span style=color:#a6e22e>theme_minimal</span>()
+</span></span></code></pre></div><pre><code>## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+</code></pre><p><img src=NNfun_files/figure-markdown_github/unnamed-chunk-2-1.png alt></p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-r data-lang=r><span style=display:flex><span>mtpl<span style=color:#f92672>$</span>claim <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>pmin</span>(mtpl<span style=color:#f92672>$</span>ClaimNb, <span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>train_ind <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>sample</span>(<span style=color:#ae81ff>1</span><span style=color:#f92672>:</span><span style=color:#a6e22e>nrow</span>(mtpl), <span style=color:#ae81ff>0.7</span><span style=color:#f92672>*</span><span style=color:#a6e22e>nrow</span>(mtpl))
+</span></span><span style=display:flex><span>mtpl_train <span style=color:#f92672>&lt;-</span> mtpl[train_ind,]
+</span></span><span style=display:flex><span>mtpl_test <span style=color:#f92672>&lt;-</span> mtpl[<span style=color:#f92672>-</span>train_ind, ]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>X_train <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>model.matrix</span>(<span style=color:#f92672>~</span><span style=color:#ae81ff>-1</span><span style=color:#f92672>+</span> ., mtpl_train[, <span style=color:#a6e22e>c</span>(<span style=color:#e6db74>&#34;Area&#34;</span>, <span style=color:#e6db74>&#34;VehPower&#34;</span>, <span style=color:#e6db74>&#34;VehAge&#34;</span> , <span style=color:#e6db74>&#34;DrivAge&#34;</span>, <span style=color:#e6db74>&#34;BonusMalus&#34;</span>, <span style=color:#e6db74>&#34;VehBrand&#34;</span>, <span style=color:#e6db74>&#34;VehGas&#34;</span>, <span style=color:#e6db74>&#34;Density&#34;</span>, <span style=color:#e6db74>&#34;Region&#34;</span>)])
+</span></span><span style=display:flex><span>X_test <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>model.matrix</span>(<span style=color:#f92672>~</span><span style=color:#ae81ff>-1</span><span style=color:#f92672>+</span> ., mtpl_test[, <span style=color:#a6e22e>c</span>(<span style=color:#e6db74>&#34;Area&#34;</span>, <span style=color:#e6db74>&#34;VehPower&#34;</span>, <span style=color:#e6db74>&#34;VehAge&#34;</span> ,<span style=color:#e6db74>&#34;DrivAge&#34;</span>, <span style=color:#e6db74>&#34;BonusMalus&#34;</span>, <span style=color:#e6db74>&#34;VehBrand&#34;</span>, <span style=color:#e6db74>&#34;VehGas&#34;</span>, <span style=color:#e6db74>&#34;Density&#34;</span>, <span style=color:#e6db74>&#34;Region&#34;</span>)])
+</span></span></code></pre></div><p>Fit a one layer NN equal to a Poisson regression:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-r data-lang=r><span style=display:flex><span>d <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>dim</span>(X_train)
+</span></span><span style=display:flex><span>model_lr <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>keras_model_sequential</span>()
+</span></span></code></pre></div><pre><code>## Loaded Tensorflow version 2.8.0
+</code></pre><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-r data-lang=r><span style=display:flex><span>  model_lr <span style=color:#f92672>%&gt;%</span><span style=color:#a6e22e>layer_dense</span>(units <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>, activation <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;exponential&#34;</span>, input_shape <span style=color:#f92672>=</span> <span style=color:#a6e22e>ncol</span>(X_train), use_bias <span style=color:#f92672>=</span> <span style=color:#66d9ef>TRUE</span>)
+</span></span><span style=display:flex><span>  
+</span></span><span style=display:flex><span>  model_lr <span style=color:#f92672>%&gt;%</span> <span style=color:#a6e22e>compile</span>(loss <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;poisson&#39;</span>, optimizer <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;nadam&#34;</span>)
+</span></span><span style=display:flex><span>  
+</span></span><span style=display:flex><span>  model_lr <span style=color:#f92672>%&gt;%</span> <span style=color:#a6e22e>fit</span>(x <span style=color:#f92672>=</span> X_train , 
+</span></span><span style=display:flex><span>                   y <span style=color:#f92672>=</span> mtpl_train<span style=color:#f92672>$</span>ClaimNb,
+</span></span><span style=display:flex><span>                   epochs <span style=color:#f92672>=</span> <span style=color:#ae81ff>500</span>,
+</span></span><span style=display:flex><span>                   batch_size <span style=color:#f92672>=</span> <span style=color:#ae81ff>10000</span> ,
+</span></span><span style=display:flex><span>                   validation_split <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.2</span>,
+</span></span><span style=display:flex><span>                   callbacks <span style=color:#f92672>=</span> <span style=color:#a6e22e>list</span>(<span style=color:#a6e22e>callback_early_stopping</span>(monitor <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;val_loss&#34;</span>, patience <span style=color:#f92672>=</span><span style=color:#ae81ff>5</span>)))
+</span></span></code></pre></div><p>We can extract the weights.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-r data-lang=r><span style=display:flex><span>keras<span style=color:#f92672>::</span><span style=color:#a6e22e>get_weights</span>(model_lr)
+</span></span></code></pre></div><pre><code>## [[1]]
+##                [,1]
+##   [1,] -1.603317380
+##   [2,] -1.538048029
+##   [3,] -1.469263434
+##   [4,] -1.329705119
+##   [5,] -1.279911995
+##   [6,] -1.209258556
+##   [7,]  0.003041624
+##   [8,] -0.290724725
+##   [9,]  0.294765741
+##  [10,] -0.186617434
+##  [11,]  0.354943722
+##  [12,]  0.354688674
+##  [13,] -0.144094139
+##  [14,]  0.449503154
+##  [15,]  0.612444341
+##  [16,] -0.165575519
+##  [17,]  0.860628068
+##  [18,]  0.391107976
+##  [19,]  0.100037389
+##  [20,]  0.443079144
+##  [21,]  1.207042336
+##  [22,]  0.723411620
+##  [23,] -0.102506630
+##  [24,]  0.673325658
+##  [25,]  0.531370521
+##  [26,]  0.706401825
+##  [27,] -0.040133797
+##  [28,]  0.620303273
+##  [29,]  0.484823078
+##  [30,]  0.849467278
+##  [31,]  0.083374299
+##  [32,]  1.010002255
+##  [33,]  0.574869037
+##  [34,]  1.076051235
+##  [35,]  0.121795148
+##  [36,]  1.417718768
+##  [37,]  1.104706526
+##  [38,]  0.547128618
+##  [39,]  0.253262371
+##  [40,]  0.603815496
+##  [41,]  1.020774603
+##  [42,]  1.337180138
+##  [43,]  1.172135711
+##  [44,]  0.360801071
+##  [45,]  0.982879877
+##  [46,]  0.383328229
+##  [47,]  1.290437341
+##  [48,] -0.336998910
+##  [49,]  0.369966328
+##  [50,]  1.392116785
+##  [51,]  0.493119419
+##  [52,]  1.141632557
+##  [53,] -0.201187059
+##  [54,]  0.603137255
+##  [55,]  1.504844546
+##  [56,]  1.326750278
+##  [57,]  0.186605886
+##  [58,] -0.376424700
+##  [59,]  0.810333490
+##  [60,]  1.565439820
+##  [61,]  2.147293329
+##  [62,]  1.599472880
+##  [63,] -2.686163902
+##  [64,]  1.346087456
+##  [65,]  1.244910240
+##  [66,]  1.533233762
+##  [67,]  1.570108533
+##  [68,]  1.904701710
+##  [69,]  1.709696174
+##  [70,] -2.936032057
+##  [71,]  1.387654901
+##  [72,]  0.721305966
+##  [73,]  0.667430878
+##  [74,]  1.875365376
+##  [75,]  0.902625799
+##  [76,]  0.159701601
+##  [77,]  1.481162548
+##  [78,] -3.475115538
+##  [79,]  1.316375017
+##  [80,] -0.166711271
+##  [81,]  0.155739918
+##  [82,]  0.049401805
+##  [83,]  0.015968367
+##  [84,]  1.765787244
+##  [85,]  0.509474695
+##  [86,] -0.110909089
+##  [87,]  0.033204675
+##  [88,]  1.586613059
+##  [89,]  1.043718815
+##  [90,] -0.037447035
+##  [91,]  0.054667398
+##  [92,] -2.279501438
+##  [93,]  1.351941705
+##  [94,]  1.849181652
+##  [95,]  0.035675362
+##  [96,]  0.174874589
+##  [97,] -0.204305485
+##  [98,]  1.782384753
+##  [99,]  1.747193933
+## [100,] -0.209538370
+## [101,]  1.844644427
+## [102,] -0.049750902
+## [103,] -0.021507265
+## [104,] -0.119137540
+## [105,] -0.011201694
+## [106,] -0.291927069
+## [107,] -0.012972042
+## [108,] -0.045153335
+## [109,] -0.085200489
+## [110,]  0.003353591
+## [111,] -0.109741919
+## [112,]  0.112893291
+## [113,] -0.197463557
+## [114,] -0.008845681
+## [115,]  0.021557970
+## [116,] -0.407801747
+## [117,]  0.117297582
+## [118,]  0.125498757
+## [119,] -0.072155401
+## [120,] -0.303847909
+## [121,] -0.153249592
+## [122,]  0.022824710
+## [123,] -0.554389954
+## [124,] -0.038375080
+## [125,]  0.210243285
+## [126,] -0.062201113
+## [127,] -0.193821877
+## [128,] -0.326262385
+## [129,]  0.156235218
+## [130,]  0.049883407
+## [131,] -0.453637421
+## [132,] -0.211725429
+## [133,] -0.164955288
+## [134,]  0.024733299
+## 
+## [[2]]
+## [1] -1.684777
+</code></pre><p>Fit a Poisson model with same features</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-r data-lang=r><span style=display:flex><span>out <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>glm</span>(ClaimNb <span style=color:#f92672>~</span>., data <span style=color:#f92672>=</span>  mtpl_train[, <span style=color:#a6e22e>c</span>(<span style=color:#e6db74>&#34;Area&#34;</span>, <span style=color:#e6db74>&#34;VehPower&#34;</span>, <span style=color:#e6db74>&#34;DrivAge&#34;</span>, <span style=color:#e6db74>&#34;BonusMalus&#34;</span>, <span style=color:#e6db74>&#34;VehBrand&#34;</span>, <span style=color:#e6db74>&#34;VehGas&#34;</span>, <span style=color:#e6db74>&#34;Density&#34;</span>, <span style=color:#e6db74>&#34;Region&#34;</span>, <span style=color:#e6db74>&#34;ClaimNb&#34;</span>)],
+</span></span><span style=display:flex><span>           family <span style=color:#f92672>=</span> <span style=color:#a6e22e>poisson</span>())
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>summary</span>(out)
+</span></span></code></pre></div><pre><code>## 
+## Call:
+## glm(formula = ClaimNb ~ ., family = poisson(), data = mtpl_train[, 
+##     c(&quot;Area&quot;, &quot;VehPower&quot;, &quot;DrivAge&quot;, &quot;BonusMalus&quot;, &quot;VehBrand&quot;, 
+##         &quot;VehGas&quot;, &quot;Density&quot;, &quot;Region&quot;, &quot;ClaimNb&quot;)])
+## 
+## Deviance Residuals: 
+##     Min       1Q   Median       3Q      Max  
+## -1.0479  -0.3326  -0.3044  -0.2782   6.1671  
+## 
+## Coefficients:
+##                 Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept)    -3.210093   0.044536 -72.078  &lt; 2e-16 ***
+## AreaB           0.009258   0.030474   0.304 0.761283    
+## AreaC           0.011697   0.039489   0.296 0.767068    
+## AreaD           0.046957   0.059860   0.784 0.432777    
+## AreaE           0.024790   0.079747   0.311 0.755911    
+## AreaF           0.034683   0.109573   0.317 0.751604    
+## VehPower       -0.017993   0.018095  -0.994 0.320045    
+## DrivAge         0.287095   0.018736  15.323  &lt; 2e-16 ***
+## BonusMalus51   -0.198463   0.051964  -3.819 0.000134 ***
+## BonusMalus52    0.403083   0.066287   6.081 1.20e-09 ***
+## BonusMalus53    0.377070   0.082262   4.584 4.57e-06 ***
+## BonusMalus54   -0.182660   0.049983  -3.654 0.000258 ***
+## BonusMalus55    0.456466   0.060038   7.603 2.90e-14 ***
+## BonusMalus56    0.546272   0.073617   7.420 1.17e-13 ***
+## BonusMalus57   -0.172866   0.048894  -3.536 0.000407 ***
+## BonusMalus58    0.870648   0.048289  18.030  &lt; 2e-16 ***
+## BonusMalus59    0.384869   0.090032   4.275 1.91e-05 ***
+## BonusMalus60    0.085745   0.044511   1.926 0.054054 .  
+## BonusMalus61    0.446808   0.109577   4.078 4.55e-05 ***
+## BonusMalus62    1.223501   0.037163  32.922  &lt; 2e-16 ***
+## BonusMalus63    0.754593   0.070840  10.652  &lt; 2e-16 ***
+## BonusMalus64   -0.120825   0.048074  -2.513 0.011960 *  
+## BonusMalus65    0.693522   0.104155   6.659 2.77e-11 ***
+## BonusMalus66    0.591490   0.116733   5.067 4.04e-07 ***
+## BonusMalus67    0.758558   0.075934   9.990  &lt; 2e-16 ***
+## BonusMalus68   -0.024287   0.045425  -0.535 0.592887    
+## BonusMalus69    0.751162   0.115866   6.483 8.99e-11 ***
+## BonusMalus70    0.696236   0.121731   5.719 1.07e-08 ***
+## BonusMalus71    0.817906   0.084692   9.657  &lt; 2e-16 ***
+## BonusMalus72    0.090669   0.043474   2.086 0.037017 *  
+## BonusMalus73    0.939221   0.114397   8.210  &lt; 2e-16 ***
+## BonusMalus74    0.631192   0.162602   3.882 0.000104 ***
+## BonusMalus75    1.078858   0.093579  11.529  &lt; 2e-16 ***
+## BonusMalus76    0.101600   0.043797   2.320 0.020350 *  
+## BonusMalus77    1.433624   0.087580  16.369  &lt; 2e-16 ***
+## BonusMalus78    1.140805   0.127439   8.952  &lt; 2e-16 ***
+## BonusMalus79    0.436495   0.288924   1.511 0.130849    
+## BonusMalus80    0.226085   0.041846   5.403 6.56e-08 ***
+## BonusMalus81    0.615267   0.179958   3.419 0.000629 ***
+## BonusMalus82    1.057732   0.196417   5.385 7.24e-08 ***
+## BonusMalus83    1.203514   0.149494   8.051 8.24e-16 ***
+## BonusMalus84    1.148742   0.316463   3.630 0.000283 ***
+## BonusMalus85    0.319899   0.041324   7.741 9.85e-15 ***
+## BonusMalus86    0.887996   0.204417   4.344 1.40e-05 ***
+## BonusMalus87    0.122732   0.408460   0.300 0.763815    
+## BonusMalus88    1.312807   0.174446   7.526 5.25e-14 ***
+## BonusMalus89    0.184082   0.707237   0.260 0.794646    
+## BonusMalus90    0.346293   0.041211   8.403  &lt; 2e-16 ***
+## BonusMalus91    1.328106   0.218532   6.077 1.22e-09 ***
+## BonusMalus92    0.302787   0.408415   0.741 0.458468    
+## BonusMalus93    1.106053   0.229752   4.814 1.48e-06 ***
+## BonusMalus94   -0.586803   1.000169  -0.587 0.557403    
+## BonusMalus95    0.526171   0.038015  13.841  &lt; 2e-16 ***
+## BonusMalus96    1.454482   0.242873   5.989 2.12e-09 ***
+## BonusMalus97    1.307871   0.267604   4.887 1.02e-06 ***
+## BonusMalus98    0.862244   0.707446   1.219 0.222915    
+## BonusMalus99    0.649554   0.577553   1.125 0.260731    
+## BonusMalus100   0.772885   0.032539  23.753  &lt; 2e-16 ***
+## BonusMalus101   1.585609   0.250397   6.332 2.41e-10 ***
+## BonusMalus102   2.187316   0.289003   7.568 3.78e-14 ***
+## BonusMalus103   1.507607   0.447423   3.370 0.000753 ***
+## BonusMalus104   1.777887   0.707428   2.513 0.011965 *  
+## BonusMalus105   1.402667   0.577535   2.429 0.015153 *  
+## BonusMalus106   1.196992   0.080719  14.829  &lt; 2e-16 ***
+## BonusMalus107   1.540399   0.408530   3.771 0.000163 ***
+## BonusMalus108   1.675492   0.577783   2.900 0.003733 ** 
+## BonusMalus109   1.918022   0.707418   2.711 0.006702 ** 
+## BonusMalus110   1.797438   0.447495   4.017 5.90e-05 ***
+## BonusMalus111  -9.150438  78.461128  -0.117 0.907158    
+## BonusMalus112   1.382636   0.072952  18.953  &lt; 2e-16 ***
+## BonusMalus113   0.694298   0.707323   0.982 0.326304    
+## BonusMalus114   0.815761   0.707275   1.153 0.248752    
+## BonusMalus115   2.137912   0.333703   6.407 1.49e-10 ***
+## BonusMalus116   1.042019   1.000244   1.042 0.297521    
+## BonusMalus118   1.449159   0.074025  19.577  &lt; 2e-16 ***
+## BonusMalus119  -9.097942  52.575200  -0.173 0.862615    
+## BonusMalus120   1.397899   0.577600   2.420 0.015513 *  
+## BonusMalus125   1.668247   0.070843  23.549  &lt; 2e-16 ***
+## BonusMalus126   0.431812   1.000120   0.432 0.665916    
+## BonusMalus132   1.493999   0.258555   5.778 7.55e-09 ***
+## BonusMalus133   0.995430   0.408545   2.437 0.014829 *  
+## BonusMalus138  -9.165153 127.039870  -0.072 0.942487    
+## BonusMalus139   1.383499   0.408615   3.386 0.000710 ***
+## BonusMalus140   1.805085   0.224061   8.056 7.87e-16 ***
+## BonusMalus147   1.714452   0.213787   8.019 1.06e-15 ***
+## BonusMalus148   1.702676   0.353887   4.811 1.50e-06 ***
+## BonusMalus150   1.740757   0.162766  10.695  &lt; 2e-16 ***
+## VehBrandB10    -0.043468   0.043473  -1.000 0.317367    
+## VehBrandB11    -0.003093   0.047585  -0.065 0.948175    
+## VehBrandB12     0.065756   0.019497   3.373 0.000745 ***
+## VehBrandB13     0.007426   0.048765   0.152 0.878963    
+## VehBrandB14    -0.170100   0.090101  -1.888 0.059043 .  
+## VehBrandB2     -0.008655   0.018219  -0.475 0.634730    
+## VehBrandB3     -0.015924   0.026165  -0.609 0.542798    
+## VehBrandB4     -0.019593   0.035561  -0.551 0.581647    
+## VehBrandB5      0.038506   0.029939   1.286 0.198400    
+## VehBrandB6     -0.058713   0.034067  -1.723 0.084802 .  
+## VehGasRegular   0.066168   0.012950   5.109 3.23e-07 ***
+## Density         0.131611   0.076879   1.712 0.086911 .  
+## RegionR21       0.075152   0.099299   0.757 0.449156    
+## RegionR22       0.127401   0.060968   2.090 0.036652 *  
+## RegionR23      -0.293875   0.070740  -4.154 3.26e-05 ***
+## RegionR24       0.200263   0.029234   6.850 7.36e-12 ***
+## RegionR25       0.191405   0.053394   3.585 0.000337 ***
+## RegionR26       0.010329   0.058230   0.177 0.859211    
+## RegionR31      -0.210481   0.042525  -4.950 7.44e-07 ***
+## RegionR41      -0.052665   0.054179  -0.972 0.331017    
+## RegionR42       0.149337   0.103698   1.440 0.149836    
+## RegionR43      -0.307140   0.170939  -1.797 0.072370 .  
+## RegionR52       0.050748   0.036226   1.401 0.161254    
+## RegionR53       0.302852   0.034348   8.817  &lt; 2e-16 ***
+## RegionR54       0.036602   0.046165   0.793 0.427867    
+## RegionR72      -0.140081   0.040062  -3.497 0.000471 ***
+## RegionR73      -0.184760   0.050763  -3.640 0.000273 ***
+## RegionR74       0.206630   0.078380   2.636 0.008382 ** 
+## RegionR82       0.129843   0.029011   4.476 7.62e-06 ***
+## RegionR83      -0.347772   0.092368  -3.765 0.000167 ***
+## RegionR91      -0.132232   0.038809  -3.407 0.000656 ***
+## RegionR93      -0.060171   0.030140  -1.996 0.045895 *  
+## RegionR94       0.107548   0.078751   1.366 0.172040    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## (Dispersion parameter for poisson family taken to be 1)
+## 
+##     Null deviance: 152137  on 474577  degrees of freedom
+## Residual deviance: 147821  on 474458  degrees of freedom
+## AIC: 196570
+## 
+## Number of Fisher Scoring iterations: 10
+</code></pre><p>Not the same parameters. Let&rsquo;s compare the deviance of the two models.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-r data-lang=r><span style=display:flex><span>dpois0 <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>function</span>(y, mu) {
+</span></span><span style=display:flex><span>  d <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>rep</span>(<span style=color:#ae81ff>1</span>, <span style=color:#a6e22e>length</span>(y))
+</span></span><span style=display:flex><span>  d[mu <span style=color:#f92672>!=</span> <span style=color:#ae81ff>0</span>] <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>dpois</span>(y[mu <span style=color:#f92672>!=</span> <span style=color:#ae81ff>0</span>], lambda <span style=color:#f92672>=</span> mu[mu <span style=color:#f92672>!=</span> <span style=color:#ae81ff>0</span>])
+</span></span><span style=display:flex><span>  
+</span></span><span style=display:flex><span>  d
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>dev.loss <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>function</span>(y, mu, density.func <span style=color:#f92672>=</span> dpois0) {
+</span></span><span style=display:flex><span>  
+</span></span><span style=display:flex><span>  estimated <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>mean</span>(<span style=color:#a6e22e>log</span>(<span style=color:#a6e22e>density.func</span>(y, mu)))
+</span></span><span style=display:flex><span>  
+</span></span><span style=display:flex><span>  
+</span></span><span style=display:flex><span>  best <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>mean</span>(<span style=color:#a6e22e>log</span>(<span style=color:#a6e22e>density.func</span>(y, y)))
+</span></span><span style=display:flex><span>  <span style=color:#ae81ff>2</span> <span style=color:#f92672>*</span> (best <span style=color:#f92672>-</span> estimated)
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>nn <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>predict</span>(model_lr, X_test)
+</span></span><span style=display:flex><span>gg <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>predict</span>(out, type <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;response&#34;</span>, newdata <span style=color:#f92672>=</span> mtpl_test[, <span style=color:#a6e22e>c</span>(<span style=color:#e6db74>&#34;Area&#34;</span>, <span style=color:#e6db74>&#34;VehPower&#34;</span>, <span style=color:#e6db74>&#34;DrivAge&#34;</span>, <span style=color:#e6db74>&#34;BonusMalus&#34;</span>, <span style=color:#e6db74>&#34;VehBrand&#34;</span>, <span style=color:#e6db74>&#34;VehGas&#34;</span>, <span style=color:#e6db74>&#34;Density&#34;</span>, <span style=color:#e6db74>&#34;Region&#34;</span>, <span style=color:#e6db74>&#34;ClaimNb&#34;</span>)])
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>print</span>(<span style=color:#a6e22e>dev.loss</span>(mtpl_test<span style=color:#f92672>$</span>ClaimNb, nn))
+</span></span></code></pre></div><pre><code>## [1] 0.310165
+</code></pre><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-r data-lang=r><span style=display:flex><span><span style=color:#a6e22e>print</span>(<span style=color:#a6e22e>dev.loss</span>(mtpl_test<span style=color:#f92672>$</span>ClaimNb, gg))
+</span></span></code></pre></div><pre><code>## [1] 0.3108266
+</code></pre><p>We get very similar deviance losses, the weights are however not the
+same.</p><p>We have not taken the cover risk exposure into account but exposure is
+usually important in insurance as it gives the time an individual has
+been exposed to possible claims. Exposure is usually measured in years.
+An individual with 3 claim and 0.5 exposure has a higher claim frequency
+than a individual with 3 claims and 1 exposure year.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-r data-lang=r><span style=display:flex><span>Features  <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>layer_input</span>(shape <span style=color:#f92672>=</span> <span style=color:#a6e22e>c</span>(<span style=color:#a6e22e>ncol</span>(X_train)), dtype <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;float32&#39;</span>, name <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;Features&#39;</span>) 
+</span></span><span style=display:flex><span>Exposure  <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>layer_input</span>(shape <span style=color:#f92672>=</span> <span style=color:#a6e22e>c</span>(<span style=color:#ae81ff>1</span>), dtype <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;float32&#39;</span>, name <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;Exposure&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Network <span style=color:#f92672>&lt;-</span> Features <span style=color:#f92672>%&gt;%</span>
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>layer_dense</span>(units <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>, activation <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;linear&#39;</span>, name <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;Network&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Response <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>list</span>(Network, Exposure) <span style=color:#f92672>%&gt;%</span>
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>layer_add</span>(name <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;Add&#39;</span>) <span style=color:#f92672>%&gt;%</span>
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>layer_dense</span>(units <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>, activation <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;exponential&#34;</span>, name <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;Response&#39;</span>, trainable <span style=color:#f92672>=</span> <span style=color:#66d9ef>FALSE</span>,
+</span></span><span style=display:flex><span>              weights <span style=color:#f92672>=</span> <span style=color:#a6e22e>list</span>(<span style=color:#a6e22e>array</span>(<span style=color:#ae81ff>1</span>, dim <span style=color:#f92672>=</span> <span style=color:#a6e22e>c</span>(<span style=color:#ae81ff>1</span>, <span style=color:#ae81ff>1</span>)), <span style=color:#a6e22e>array</span>(<span style=color:#ae81ff>0</span>, dim <span style=color:#f92672>=</span> <span style=color:#a6e22e>c</span>(<span style=color:#ae81ff>1</span>))) ) 
+</span></span><span style=display:flex><span><span style=color:#75715e># Note above: second Weight set to zero for bias, if we use the argument use_bias =FALSE then we only need to set array(1, dim = c(1, 1))</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>model_exposure <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>keras_model</span>(inputs <span style=color:#f92672>=</span> <span style=color:#a6e22e>c</span>(Features, Exposure), outputs <span style=color:#f92672>=</span> <span style=color:#a6e22e>c</span>(Response))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>model_exposure <span style=color:#f92672>%&gt;%</span> <span style=color:#a6e22e>compile</span>(
+</span></span><span style=display:flex><span>  loss <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;poisson&#39;</span>,
+</span></span><span style=display:flex><span>  optimizer <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;nadam&#39;</span>
+</span></span><span style=display:flex><span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>  fit <span style=color:#f92672>&lt;-</span> model_exposure <span style=color:#f92672>%&gt;%</span> <span style=color:#a6e22e>fit</span>(
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>list</span>(X_train, <span style=color:#a6e22e>as.matrix</span>(<span style=color:#a6e22e>log</span>(mtpl_train<span style=color:#f92672>$</span>Exposure))), <span style=color:#a6e22e>as.matrix</span>(mtpl_train<span style=color:#f92672>$</span>ClaimNb),
+</span></span><span style=display:flex><span>    epochs <span style=color:#f92672>=</span> <span style=color:#ae81ff>500</span>,
+</span></span><span style=display:flex><span>    batch_size <span style=color:#f92672>=</span> <span style=color:#ae81ff>10000</span>,
+</span></span><span style=display:flex><span>    validation_split <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.2</span>,
+</span></span><span style=display:flex><span>    verbose <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>,
+</span></span><span style=display:flex><span>    callbacks <span style=color:#f92672>=</span> <span style=color:#a6e22e>list</span>(<span style=color:#a6e22e>callback_early_stopping</span>(monitor <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;val_loss&#34;</span>, patience <span style=color:#f92672>=</span><span style=color:#ae81ff>5</span>))
+</span></span><span style=display:flex><span>  )
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-r data-lang=r><span style=display:flex><span>out <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>glm</span>(ClaimNb <span style=color:#f92672>~</span>., data <span style=color:#f92672>=</span>  mtpl_train[, <span style=color:#a6e22e>c</span>(<span style=color:#e6db74>&#34;Area&#34;</span>, <span style=color:#e6db74>&#34;VehPower&#34;</span>, <span style=color:#e6db74>&#34;DrivAge&#34;</span>, <span style=color:#e6db74>&#34;BonusMalus&#34;</span>, <span style=color:#e6db74>&#34;VehBrand&#34;</span>, <span style=color:#e6db74>&#34;VehGas&#34;</span>, <span style=color:#e6db74>&#34;Density&#34;</span>, <span style=color:#e6db74>&#34;Region&#34;</span>, <span style=color:#e6db74>&#34;ClaimNb&#34;</span>, <span style=color:#e6db74>&#34;Exposure&#34;</span>)],
+</span></span><span style=display:flex><span>           offset <span style=color:#f92672>=</span> <span style=color:#a6e22e>log</span>(Exposure),
+</span></span><span style=display:flex><span>           family <span style=color:#f92672>=</span> <span style=color:#a6e22e>quasipoisson</span>())
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-r data-lang=r><span style=display:flex><span>nn <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>predict</span>(model_exposure, <span style=color:#a6e22e>list</span>(X_test, <span style=color:#a6e22e>as.matrix</span>(<span style=color:#a6e22e>log</span>(mtpl_test<span style=color:#f92672>$</span>Exposure))))
+</span></span><span style=display:flex><span>gg <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>predict</span>(out, type <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;response&#34;</span>, newdata <span style=color:#f92672>=</span> mtpl_test[, <span style=color:#a6e22e>c</span>(<span style=color:#e6db74>&#34;Area&#34;</span>, <span style=color:#e6db74>&#34;VehPower&#34;</span>, <span style=color:#e6db74>&#34;DrivAge&#34;</span>, <span style=color:#e6db74>&#34;BonusMalus&#34;</span>, <span style=color:#e6db74>&#34;VehBrand&#34;</span>, <span style=color:#e6db74>&#34;VehGas&#34;</span>, <span style=color:#e6db74>&#34;Density&#34;</span>, <span style=color:#e6db74>&#34;Region&#34;</span>, <span style=color:#e6db74>&#34;ClaimNb&#34;</span>, <span style=color:#e6db74>&#34;Exposure&#34;</span>)])
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>print</span>(<span style=color:#a6e22e>dev.loss</span>(mtpl_test<span style=color:#f92672>$</span>ClaimNb, nn))
+</span></span></code></pre></div><pre><code>## [1] 0.3161008
+</code></pre><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-r data-lang=r><span style=display:flex><span><span style=color:#a6e22e>print</span>(<span style=color:#a6e22e>dev.loss</span>(mtpl_test<span style=color:#f92672>$</span>ClaimNb, gg))
+</span></span></code></pre></div><pre><code>## [1] 0.3089037
+</code></pre><p>We get a worse deviance loss.</p><p>We have basically performed a glm poisson regression using a NN and
+there is nothing “deep” aobut this neural network. To end this study we
+add a hidden non-linear layers to try and model non-linearities that may
+occur, we then compare it to a Quasi-Poisson glm model.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-r data-lang=r><span style=display:flex><span>Features  <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>layer_input</span>(shape <span style=color:#f92672>=</span> <span style=color:#a6e22e>c</span>(<span style=color:#a6e22e>ncol</span>(X_train)), dtype <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;float32&#39;</span>, name <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;Features&#39;</span>) 
+</span></span><span style=display:flex><span>Exposure  <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>layer_input</span>(shape <span style=color:#f92672>=</span> <span style=color:#a6e22e>c</span>(<span style=color:#ae81ff>1</span>), dtype <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;float32&#39;</span>, name <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;Exposure&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Network <span style=color:#f92672>&lt;-</span> Features <span style=color:#f92672>%&gt;%</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>layer_dense</span>(units <span style=color:#f92672>=</span> <span style=color:#ae81ff>30</span>, activation <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;tanh&#39;</span>, name <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;layer1&#39;</span>) <span style=color:#f92672>%&gt;%</span>
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>layer_dense</span>(units <span style=color:#f92672>=</span> <span style=color:#ae81ff>10</span>, activation <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;tanh&#39;</span>, name <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;layer2&#39;</span>) <span style=color:#f92672>%&gt;%</span>
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>layer_dense</span>(units <span style=color:#f92672>=</span> <span style=color:#ae81ff>5</span>, activation <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;ReLU&#39;</span>, name <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;layer3&#39;</span>) <span style=color:#f92672>%&gt;%</span>
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>layer_dense</span>(units <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>, activation <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;linear&#39;</span>, name <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;Network&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Response <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>list</span>(Network, Exposure) <span style=color:#f92672>%&gt;%</span>
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>layer_add</span>(name <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;Add&#39;</span>) <span style=color:#f92672>%&gt;%</span>
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>layer_dense</span>(units <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>, activation <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;exponential&#34;</span>, name <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;Response&#39;</span>, trainable <span style=color:#f92672>=</span> <span style=color:#66d9ef>FALSE</span>,
+</span></span><span style=display:flex><span>              weights <span style=color:#f92672>=</span> <span style=color:#a6e22e>list</span>(<span style=color:#a6e22e>array</span>(<span style=color:#ae81ff>1</span>, dim <span style=color:#f92672>=</span> <span style=color:#a6e22e>c</span>(<span style=color:#ae81ff>1</span>, <span style=color:#ae81ff>1</span>)), <span style=color:#a6e22e>array</span>(<span style=color:#ae81ff>0</span>, dim <span style=color:#f92672>=</span> <span style=color:#a6e22e>c</span>(<span style=color:#ae81ff>1</span>))) ) 
+</span></span><span style=display:flex><span><span style=color:#75715e># Note above: second Weight set to zero for bias, if we use the argument use_bias =FALSE then we only need to set array(1, dim = c(1, 1))</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>model_deep <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>keras_model</span>(inputs <span style=color:#f92672>=</span> <span style=color:#a6e22e>c</span>(Features, Exposure), outputs <span style=color:#f92672>=</span> <span style=color:#a6e22e>c</span>(Response))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>model_deep <span style=color:#f92672>%&gt;%</span> <span style=color:#a6e22e>compile</span>(
+</span></span><span style=display:flex><span>  loss <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;poisson&#39;</span>,
+</span></span><span style=display:flex><span>  optimizer <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;nadam&#39;</span>
+</span></span><span style=display:flex><span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>  fit <span style=color:#f92672>&lt;-</span> model_deep <span style=color:#f92672>%&gt;%</span> <span style=color:#a6e22e>fit</span>(
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>list</span>(X_train, <span style=color:#a6e22e>as.matrix</span>(<span style=color:#a6e22e>log</span>(mtpl_train<span style=color:#f92672>$</span>Exposure))), <span style=color:#a6e22e>as.matrix</span>(mtpl_train<span style=color:#f92672>$</span>ClaimNb),
+</span></span><span style=display:flex><span>    epochs <span style=color:#f92672>=</span> <span style=color:#ae81ff>500</span>,
+</span></span><span style=display:flex><span>    batch_size <span style=color:#f92672>=</span> <span style=color:#ae81ff>10000</span>,
+</span></span><span style=display:flex><span>    validation_split <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.2</span>,
+</span></span><span style=display:flex><span>    verbose <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>,
+</span></span><span style=display:flex><span>    callbacks <span style=color:#f92672>=</span> <span style=color:#a6e22e>list</span>(<span style=color:#a6e22e>callback_early_stopping</span>(monitor <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;val_loss&#34;</span>, patience <span style=color:#f92672>=</span><span style=color:#ae81ff>5</span>))
+</span></span><span style=display:flex><span>  )
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-r data-lang=r><span style=display:flex><span>nn <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>predict</span>(model_deep, <span style=color:#a6e22e>list</span>(X_test, <span style=color:#a6e22e>as.matrix</span>(<span style=color:#a6e22e>log</span>(mtpl_test<span style=color:#f92672>$</span>Exposure))))
+</span></span><span style=display:flex><span><span style=color:#a6e22e>print</span>(<span style=color:#a6e22e>dev.loss</span>(mtpl_test<span style=color:#f92672>$</span>ClaimNb, nn))
+</span></span></code></pre></div><pre><code>## [1] 0.3064085
+</code></pre><p>We get slighlty better deviance loss. To find the best model one should
+test different number of hidden layers and different activation
+functions.</p><p>Instead of one-hot encoding our categorical variables, we can use
+embeddings. There are multiple possible embeddings that are possible to
+use such as pca, t-sne and NLP methods such as word2vec. Keras offers an
+Embedding layer that can be used for neural networks on text data, which
+is trained during the gradient descent of the NN (not a seperate model).</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-r data-lang=r><span style=display:flex><span>X_train <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>model.matrix</span>(<span style=color:#f92672>~</span><span style=color:#ae81ff>-1</span><span style=color:#f92672>+</span> ., mtpl_train[, <span style=color:#a6e22e>c</span>(<span style=color:#e6db74>&#34;Area&#34;</span>, <span style=color:#e6db74>&#34;VehPower&#34;</span>, <span style=color:#e6db74>&#34;VehAge&#34;</span> , <span style=color:#e6db74>&#34;DrivAge&#34;</span>, <span style=color:#e6db74>&#34;BonusMalus&#34;</span>, <span style=color:#e6db74>&#34;VehBrand&#34;</span>, <span style=color:#e6db74>&#34;VehGas&#34;</span>, <span style=color:#e6db74>&#34;Density&#34;</span>)])
+</span></span><span style=display:flex><span>region_train <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>model.matrix</span>(<span style=color:#f92672>~</span><span style=color:#ae81ff>-1+.</span>, mtpl_train[, <span style=color:#a6e22e>c</span>(<span style=color:#e6db74>&#34;Region&#34;</span>), <span style=color:#66d9ef>FALSE</span>])
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>X_test <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>model.matrix</span>(<span style=color:#f92672>~</span><span style=color:#ae81ff>-1</span><span style=color:#f92672>+</span> ., mtpl_test[, <span style=color:#a6e22e>c</span>(<span style=color:#e6db74>&#34;Area&#34;</span>, <span style=color:#e6db74>&#34;VehPower&#34;</span>, <span style=color:#e6db74>&#34;VehAge&#34;</span> ,<span style=color:#e6db74>&#34;DrivAge&#34;</span>, <span style=color:#e6db74>&#34;BonusMalus&#34;</span>, <span style=color:#e6db74>&#34;VehBrand&#34;</span>, <span style=color:#e6db74>&#34;VehGas&#34;</span>, <span style=color:#e6db74>&#34;Density&#34;</span>)])
+</span></span><span style=display:flex><span>region_test <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>model.matrix</span>(<span style=color:#f92672>~</span><span style=color:#ae81ff>-1+.</span>, mtpl_test[, <span style=color:#a6e22e>c</span>(<span style=color:#e6db74>&#34;Region&#34;</span>), <span style=color:#66d9ef>FALSE</span>])
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Features  <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>layer_input</span>(shape <span style=color:#f92672>=</span> <span style=color:#a6e22e>c</span>(<span style=color:#a6e22e>ncol</span>(X_train)), dtype <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;float32&#39;</span>, name <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;Features&#39;</span>) 
+</span></span><span style=display:flex><span>Region  <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>layer_input</span>(shape <span style=color:#f92672>=</span> <span style=color:#a6e22e>c</span>(<span style=color:#ae81ff>1</span>), dtype <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;float32&#39;</span>, name <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;Region&#39;</span>) 
+</span></span><span style=display:flex><span>Exposure  <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>layer_input</span>(shape <span style=color:#f92672>=</span> <span style=color:#a6e22e>c</span>(<span style=color:#ae81ff>1</span>), dtype <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;float32&#39;</span>, name <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;Exposure&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Region_emb <span style=color:#f92672>&lt;-</span> Region <span style=color:#f92672>%&gt;%</span> <span style=color:#a6e22e>layer_embedding</span>(input_dim <span style=color:#f92672>=</span> <span style=color:#a6e22e>length</span>(<span style=color:#a6e22e>unique</span>(mtpl<span style=color:#f92672>$</span>Region)) , output_dim <span style=color:#f92672>=</span><span style=color:#ae81ff>2</span> , input_length <span style=color:#f92672>=</span><span style=color:#ae81ff>1</span> , name <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;RegionEmbedding&#34;</span>) <span style=color:#f92672>%&gt;%</span> <span style=color:#a6e22e>layer_flatten</span>(<span style=color:#e6db74>&#34;RegionEmbeddingFlat&#34;</span>, data_format <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;channels_last&#34;</span>)  <span style=color:#75715e># data format TensorFlow backend to Keras uses channels last ordering</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Network <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>list</span>( Features, Region ) <span style=color:#f92672>%&gt;%</span> <span style=color:#a6e22e>layer_concatenate </span>( name <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;NetorkConcatenated&#34;</span>) <span style=color:#f92672>%&gt;%</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>layer_dense</span>(units <span style=color:#f92672>=</span> <span style=color:#ae81ff>30</span>, activation <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;tanh&#39;</span>, name <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;layer1&#39;</span>) <span style=color:#f92672>%&gt;%</span>
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>layer_dense</span>(units <span style=color:#f92672>=</span> <span style=color:#ae81ff>10</span>, activation <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;tanh&#39;</span>, name <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;layer2&#39;</span>) <span style=color:#f92672>%&gt;%</span>
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>layer_dense</span>(units <span style=color:#f92672>=</span> <span style=color:#ae81ff>5</span>, activation <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;ReLU&#39;</span>, name <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;layer3&#39;</span>) <span style=color:#f92672>%&gt;%</span>
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>layer_dense</span>(units <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>, activation <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;linear&#39;</span>, name <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;Network&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Response <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>list</span>(Network, Exposure) <span style=color:#f92672>%&gt;%</span>
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>layer_add</span>(name <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;Add&#39;</span>) <span style=color:#f92672>%&gt;%</span>
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>layer_dense</span>(units <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>, activation <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;exponential&#34;</span>, name <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;Response&#39;</span>, trainable <span style=color:#f92672>=</span> <span style=color:#66d9ef>FALSE</span>,
+</span></span><span style=display:flex><span>              weights <span style=color:#f92672>=</span> <span style=color:#a6e22e>list</span>(<span style=color:#a6e22e>array</span>(<span style=color:#ae81ff>1</span>, dim <span style=color:#f92672>=</span> <span style=color:#a6e22e>c</span>(<span style=color:#ae81ff>1</span>, <span style=color:#ae81ff>1</span>)), <span style=color:#a6e22e>array</span>(<span style=color:#ae81ff>0</span>, dim <span style=color:#f92672>=</span> <span style=color:#a6e22e>c</span>(<span style=color:#ae81ff>1</span>))) ) 
+</span></span><span style=display:flex><span><span style=color:#75715e># Note above: second Weight set to zero for bias, if we use the argument use_bias =FALSE then we only need to set array(1, dim = c(1, 1))</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>model_deep <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>keras_model</span>(inputs <span style=color:#f92672>=</span> <span style=color:#a6e22e>c</span>(Features, Region, Exposure), outputs <span style=color:#f92672>=</span> <span style=color:#a6e22e>c</span>(Response))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>model_deep <span style=color:#f92672>%&gt;%</span> <span style=color:#a6e22e>compile</span>(
+</span></span><span style=display:flex><span>  loss <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;poisson&#39;</span>,
+</span></span><span style=display:flex><span>  optimizer <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;nadam&#39;</span>
+</span></span><span style=display:flex><span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># Note we need to set region to numeric</span>
+</span></span><span style=display:flex><span>  fit <span style=color:#f92672>&lt;-</span> model_deep <span style=color:#f92672>%&gt;%</span> <span style=color:#a6e22e>fit</span>(
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>list</span>(X_train, <span style=color:#a6e22e>as.matrix</span>(<span style=color:#a6e22e>as.numeric</span>(mtpl_train<span style=color:#f92672>$</span>Region)),  <span style=color:#a6e22e>as.matrix</span>(<span style=color:#a6e22e>log</span>(mtpl_train<span style=color:#f92672>$</span>Exposure))), 
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>as.matrix</span>(mtpl_train<span style=color:#f92672>$</span>ClaimNb),
+</span></span><span style=display:flex><span>    epochs <span style=color:#f92672>=</span> <span style=color:#ae81ff>500</span>,
+</span></span><span style=display:flex><span>    batch_size <span style=color:#f92672>=</span> <span style=color:#ae81ff>10000</span>,
+</span></span><span style=display:flex><span>    validation_split <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.2</span>,
+</span></span><span style=display:flex><span>    verbose <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>,
+</span></span><span style=display:flex><span>    callbacks <span style=color:#f92672>=</span> <span style=color:#a6e22e>list</span>(<span style=color:#a6e22e>callback_early_stopping</span>(monitor <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;val_loss&#34;</span>, patience <span style=color:#f92672>=</span><span style=color:#ae81ff>5</span>))
+</span></span><span style=display:flex><span>  )
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-r data-lang=r><span style=display:flex><span>nn <span style=color:#f92672>&lt;-</span> <span style=color:#a6e22e>predict</span>(model_deep, <span style=color:#a6e22e>list</span>(X_test, <span style=color:#a6e22e>as.numeric</span>(mtpl_test<span style=color:#f92672>$</span>Region), <span style=color:#a6e22e>as.matrix</span>(<span style=color:#a6e22e>log</span>(mtpl_test<span style=color:#f92672>$</span>Exposure))))
+</span></span><span style=display:flex><span><span style=color:#a6e22e>print</span>(<span style=color:#a6e22e>dev.loss</span>(mtpl_test<span style=color:#f92672>$</span>ClaimNb, nn))
+</span></span></code></pre></div><pre><code>## [1] 0.3124517
+</code></pre><p>Not giving us better performance in this case.</p></div></div></div><div class="layui-col-md4 layui-col-sm12 layui-col-xs12"><div class="layui-card single-card"><h2 class=single-title>Relevant Topics</h2><div style=margin-left:10px><blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px><a href=/post/glm/><h3>Generalized Linear Models</h3></a><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<span>2022-03-02</span>
+<i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
+<a href=/tags/model/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Model</span></a></h3></blockquote></div><div style=margin-left:10px><blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px><a href=/post/hmm/><h3>Hidden Markov Models</h3></a><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<span>2022-02-15</span>
+<i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
+<a href=/tags/model/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Model</span></a>
+<a href=/tags/classification/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Classification</span></a></h3></blockquote></div><br></div><div class="layui-card single-card"><h2 class=single-title>Recent Posts</h2><div style=margin-left:10px><blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px><a href=/post/nnfun/><h3>Neural Networks for Insurance Pricing</h3></a><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<span>2022-04-11</span>
+<i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
+<a href=/tags/model/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Model</span></a></h3></blockquote></div><div style=margin-left:10px><blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px><a href=/post/glm/><h3>Generalized Linear Models</h3></a><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<span>2022-03-02</span>
+<i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
+<a href=/tags/model/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Model</span></a></h3></blockquote></div><div style=margin-left:10px><blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px><a href=/post/hmm/><h3>Hidden Markov Models</h3></a><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<span>2022-02-15</span>
+<i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
+<a href=/tags/model/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Model</span></a>
+<a href=/tags/classification/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Classification</span></a></h3></blockquote></div><div style=margin-left:10px><blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px><a href=/post/extremes/><h3>Quntitative Risk Analysis</h3></a><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<span>2021-11-17</span>
+<i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
+<a href=/tags/risk/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Risk</span></a>
+<a href=/tags/extremes/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Extremes</span></a></h3></blockquote></div><div style=margin-left:10px><blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px><a href=/post/deepkernel/><h3>Deep Graph Kernels</h3></a><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<span>2021-11-16</span>
+<i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
+<a href=/tags/graph/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Graph</span></a>
+<a href=/tags/classification/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Classification</span></a>
+<a href=/tags/kernel/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Kernel</span></a></h3></blockquote></div><br></div></div></div></div></div><footer><div class=layui-container><p class=copyright>&copy; All rights reserved. Powered by <a href=https://gohugo.io style=color:#fff>Hugo</a>, <a href=https://github.com/ertuil/erblog style=color:#fff>Erblog</a> and <a href=https://github.com/vlunot/nb2hugo style=color:#fff>nb2hugo</a>.</p></div></footer></body></html>
