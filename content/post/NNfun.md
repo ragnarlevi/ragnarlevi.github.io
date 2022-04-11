@@ -5,7 +5,7 @@ author = "Ragnar Levi Gudmundarson"
 tags = ["Model"]
 +++
 
-In this notebook we will be looking at a typicall insurance pricing data set and test GLM and NN models. A typical assumption is that the repsone is poisson:
+In this notebook we will be looking at a typicall insurance pricing [data set](https://www.openml.org/search?type=data&sort=runs&id=41214&status=active) and test GLM and NN models. A typical assumption is that the repsone is poisson:
 $$ P(Y = y) = \frac{\lambda^y \exp(-\lambda)}{y!}$$
 To note a shortcoming of the Poisson distribution is that the mean is equal to the variance, and thus one might use quasi-Poisson or a negative binomial instead. Another shortcoming is that insurance claims are usally zero inflated and thus a zero-inflated poisson model or a hurdle poisson model might be used instead. We will not consider any of those models as this notebook is simply testing some NN's and compare them to a simple GLM.
 
