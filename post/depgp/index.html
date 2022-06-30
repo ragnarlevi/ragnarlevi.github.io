@@ -1,0 +1,269 @@
+<html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Ragnar - Dependent Gaussian Processes</title><meta content="Kernel" name=keywords><meta content="Ragnar - Dependent Gaussian Processes In this workbook, I am going to reproduce the work of Phillip Boyle and Marcus Frean Dependent Gaussian Processes. I will assume that the reader is familiar with the basics of Gaussian Processes
+import numpy as np import matplotlib.pyplot as plt import seaborn as sns Consider a device that operates on a continuous, real valuedinput signal overtime $x(t)$ and emits a continuous real valued output $y(t)$. This device is a linear time invariant (LTI) fiter if it is" name=description><meta name=viewport content="width=device-width,initial-scale=1"><link rel=stylesheet href=/layui/css/layui.css><link rel=stylesheet href=/self/css/default.css><script src=/layui/layui.js></script>
+<link rel=stylesheet async href=/self/css/markdown.min.css><link rel=stylesheet async href=/self/css/gallery.css><script src=https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin=anonymous></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css integrity="sha256-eZrrJcwDc/3uDhsdt61sL2oOBY362qM3lon1gyExkL0=" crossorigin=anonymous><script async src=https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js integrity="sha256-h2tMEmhemR2IN4wbbdNjj9LaDIjzwk2hralQwfJmBOE=" crossorigin=anonymous></script></head><body><header><script type=text/x-mathjax-config>
+      MathJax.Hub.Config({"HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"], linebreaks: { automatic:true }, EqnChunk: (MathJax.Hub.Browser.isMobile ? 10 : 50) },
+          tex2jax: { inlineMath: [ ["$", "$"], ["\\(", "\\)"] ], displayMath: [ ["$$","$$"], ["\\[", "\\]"] ], processEscapes: true, ignoreClass: "tex2jax_ignore|dno" },
+          TeX: {  noUndefined: { attributes: { mathcolor: "red", mathbackground: "#FFEEEE", mathsize: "90%" } } },
+          messageStyle: "none"
+      });
+  </script><script type=text/javascript src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script></header><header class="layui-header layui-bg-cyan"><a class=nav-self-logo href=/>Ragnar</a><ul class="layui-nav layui-layout-right layui-bg-cyan" lay-filter><li class=layui-nav-item id=nav_big><a href=/post/>Posts</a></li><li class=layui-nav-item id=nav_big><a href=/about/>About</a></li><li class=layui-nav-item id=nav_small><a href=javascript:;><i class="layui-icon layui-icon-app" style=font-size:24px></i></a><dl class=layui-nav-child><dd><a href=/post/>Posts</a></dd><dd><a href=/about/>About</a></dd></dl></li></ul></header><script>layui.use("element",function(){var e=layui.element})</script><div id=content style=min-height:80%><div class=layui-container style=margin-bottom:10px><div class="layui-row layui-col-space10"><div class="layui-col-md8 layui-col-sm12 layui-col-xs12"><div class="layui-card single-card"><br><blockquote class="self-elem-quote self-elem-quote-bg-red markdown-body single-title"><h1>Dependent Gaussian Processes</h1><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<span>2022-06-30</span>
+<i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
+<a href=/tags/kernel/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Kernel</span></a></h3></blockquote><div class="layui-card-body markdown-body single-content"><h1 id=dependent-gaussian-processes>Dependent Gaussian Processes</h1><p>In this workbook, I am going to reproduce the work of Phillip Boyle and Marcus Frean <a href=https://proceedings.neurips.cc/paper/2004/file/59eb5dd36914c29b299c84b7ddaf08ec-Paper.pdf>Dependent Gaussian Processes</a>.
+I will assume that the reader is familiar with the basics of Gaussian Processes</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#f92672>import</span> numpy <span style=color:#66d9ef>as</span> np
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> matplotlib.pyplot <span style=color:#66d9ef>as</span> plt
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> seaborn <span style=color:#66d9ef>as</span> sns
+</span></span></code></pre></div><p>Consider a device that operates on a continuous, real valuedinput signal overtime $x(t)$ and emits a continuous real valued output $y(t)$. This device is a linear time invariant (LTI) fiter if it is</p><ul><li>Linear: If $x(t) = x_1(t)+x_2(t) then the outpus is $y(t) = y_1(t) + y_2(t)</li><li>Time invariant: The output response to a shifted input $x(t+ \tau)$ is $y(t+ \tau)$</li></ul><p>An LTI filter is completely characterized by its impulse response, $h(t)$, which is equivalent to the output when the filter is stimulated by a unit impulse $\delta(t)$.Given the impulse response, we can find the output of the filter in response to any finite input via convolution:</p><p>$$ y(t) = h(t) * x(t) = \int h(t-\tau)x(\tau)d\tau$$</p><p>When a linear filter is excited with Gaussian white noise $w(t)$, the covariance function of a zero-mean output process can be shown to be:</p><p>$$ cov(y(t), y(t&rsquo;) = \int h(\tau) h(t&rsquo; -t +\tau)d\tau$$</p><p>Furthermore, this brings us to the main theme of this workbook, if $y_1(t)$ and $y_2(t) are two real-values outputs driven by the <strong>same</strong> white noise w(t) then their cross-covariance can be written as</p><p>$$ cov(y_1(t), y_2(t&rsquo;) = \int h_1(\tau) h_2(t&rsquo; -t +\tau)d\tau$$</p><p>where $h_i$ is the filter of process $y_i$.</p><p>If we define use a gaussian filter</p><p>$$ h(x) = b \exp \big( -0.5 ax^2 \big)$$</p><p>then the covariance and cross-covariance functions can be calculated explicitly:</p><p>$$ cov_{ii}(t-t&rsquo;) = \frac{\pi^{1/2} b_i^2}{\sqrt(a_i) } \exp \big( -0.25 a(t-t&rsquo;)^2 \big) $$
+$$ cov_{ij}(t-t&rsquo;) = \frac{(2\pi)^{1/2} b_i b_j}{\sqrt(a_i + a_j) } \exp \big( -0.25 \frac{a_1 a_2}{a_1 + a_2}(t-t&rsquo;)^2 \big) $$</p><p>Note that we can define this for the case when $t$ is a vector as well.</p><p>To motivate why this formulation is useful. We show that we can use the one process say $y_2$ at time $t$ to predict unobserved values of $y_1$ at time $t$</p><p>We start by simulating two dependent processes</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>time <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>arange(<span style=color:#ae81ff>60</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>y_signal <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>sin(time<span style=color:#f92672>*</span><span style=color:#ae81ff>0.4</span>)
+</span></span><span style=display:flex><span>y1 <span style=color:#f92672>=</span> y_signal[:<span style=color:#ae81ff>30</span>] <span style=color:#f92672>+</span> np<span style=color:#f92672>.</span>random<span style=color:#f92672>.</span>normal(scale <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.1</span>,size <span style=color:#f92672>=</span> <span style=color:#ae81ff>30</span>)
+</span></span><span style=display:flex><span>y2 <span style=color:#f92672>=</span> y_signal[:<span style=color:#ae81ff>30</span>] <span style=color:#f92672>+</span> np<span style=color:#f92672>.</span>random<span style=color:#f92672>.</span>normal(scale <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.1</span>, size <span style=color:#f92672>=</span> <span style=color:#ae81ff>30</span>)
+</span></span><span style=display:flex><span>x1 <span style=color:#f92672>=</span> time[:<span style=color:#ae81ff>30</span>]
+</span></span><span style=display:flex><span>x2 <span style=color:#f92672>=</span> time[:<span style=color:#ae81ff>30</span>]
+</span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>plot(x1, y1)
+</span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>plot(x2, y2)
+</span></span></code></pre></div><pre><code>[&lt;matplotlib.lines.Line2D at 0x1171c9a3460&gt;]
+</code></pre><p><img src=DepGP_5_1.png alt=png></p><p>Define the kernels</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#f92672>from</span> sklearn.metrics <span style=color:#f92672>import</span> pairwise_distances
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>C_ii</span>(a,b, sigma, x,y):
+</span></span><span style=display:flex><span>    d <span style=color:#f92672>=</span> pairwise_distances(np<span style=color:#f92672>.</span>expand_dims(x, axis <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>),np<span style=color:#f92672>.</span>expand_dims(y, axis <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>)) <span style=color:#f92672>**</span> <span style=color:#ae81ff>2</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> ((b<span style=color:#f92672>**</span><span style=color:#ae81ff>2</span>)<span style=color:#f92672>*</span>np<span style=color:#f92672>.</span>power(np<span style=color:#f92672>.</span>pi, <span style=color:#ae81ff>0.5</span>)<span style=color:#f92672>*</span>np<span style=color:#f92672>.</span>exp(<span style=color:#f92672>-</span><span style=color:#ae81ff>0.25</span><span style=color:#f92672>*</span>a<span style=color:#f92672>*</span>d) <span style=color:#f92672>/</span> np<span style=color:#f92672>.</span>sqrt(a)) <span style=color:#f92672>+</span> np<span style=color:#f92672>.</span>identity(d<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>])<span style=color:#f92672>*</span>sigma
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>C_ii_pred</span>(a,b, x,y):
+</span></span><span style=display:flex><span>    d <span style=color:#f92672>=</span> pairwise_distances(np<span style=color:#f92672>.</span>expand_dims(x, axis <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>),np<span style=color:#f92672>.</span>expand_dims(y, axis <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>)) <span style=color:#f92672>**</span> <span style=color:#ae81ff>2</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> (b<span style=color:#f92672>**</span><span style=color:#ae81ff>2</span>)<span style=color:#f92672>*</span>np<span style=color:#f92672>.</span>power(np<span style=color:#f92672>.</span>pi, <span style=color:#ae81ff>0.5</span>)<span style=color:#f92672>*</span>np<span style=color:#f92672>.</span>exp(<span style=color:#f92672>-</span><span style=color:#ae81ff>0.25</span><span style=color:#f92672>*</span>a<span style=color:#f92672>*</span>d ) <span style=color:#f92672>/</span> np<span style=color:#f92672>.</span>sqrt(a) 
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>C_ij</span>(a1,a2,b1,b2, x,y):
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    d <span style=color:#f92672>=</span> pairwise_distances(np<span style=color:#f92672>.</span>expand_dims(x, axis <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>),np<span style=color:#f92672>.</span>expand_dims(y, axis <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>)) <span style=color:#f92672>**</span> <span style=color:#ae81ff>2</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    const1 <span style=color:#f92672>=</span> (<span style=color:#ae81ff>2</span><span style=color:#f92672>*</span>np<span style=color:#f92672>.</span>pi) <span style=color:#f92672>**</span> <span style=color:#ae81ff>0.5</span>
+</span></span><span style=display:flex><span>    const2 <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>sqrt(a1<span style=color:#f92672>+</span>a2)
+</span></span><span style=display:flex><span>    const3 <span style=color:#f92672>=</span> a1<span style=color:#f92672>*</span>a2<span style=color:#f92672>/</span>(a1<span style=color:#f92672>+</span>a2)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> b1<span style=color:#f92672>*</span>b2<span style=color:#f92672>*</span>const1 <span style=color:#f92672>*</span> np<span style=color:#f92672>.</span>exp(<span style=color:#f92672>-</span><span style=color:#ae81ff>0.5</span><span style=color:#f92672>*</span>const3 <span style=color:#f92672>*</span> d)<span style=color:#f92672>/</span>const2
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>C_ji</span>(a1,a2,b1,b2, x,y):
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    d <span style=color:#f92672>=</span> pairwise_distances(np<span style=color:#f92672>.</span>expand_dims(y, axis <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>),np<span style=color:#f92672>.</span>expand_dims(x, axis <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>)) <span style=color:#f92672>**</span><span style=color:#ae81ff>2</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    const1 <span style=color:#f92672>=</span> (<span style=color:#ae81ff>2</span><span style=color:#f92672>*</span>np<span style=color:#f92672>.</span>pi) <span style=color:#f92672>**</span> <span style=color:#ae81ff>0.5</span>
+</span></span><span style=display:flex><span>    const2 <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>sqrt(a1<span style=color:#f92672>+</span>a2)
+</span></span><span style=display:flex><span>    const3 <span style=color:#f92672>=</span> a1<span style=color:#f92672>*</span>a2<span style=color:#f92672>/</span>(a1<span style=color:#f92672>+</span>a2)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> b1<span style=color:#f92672>*</span>b2<span style=color:#f92672>*</span>const1 <span style=color:#f92672>*</span> np<span style=color:#f92672>.</span>exp(<span style=color:#f92672>-</span><span style=color:#ae81ff>0.5</span><span style=color:#f92672>*</span>const3 <span style=color:#f92672>*</span> d)<span style=color:#f92672>/</span>const2
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>neg_lik</span>(C, y):
+</span></span><span style=display:flex><span>    <span style=color:#f92672>from</span> numpy.linalg <span style=color:#f92672>import</span> cholesky, det
+</span></span><span style=display:flex><span>    <span style=color:#f92672>from</span> scipy.linalg <span style=color:#f92672>import</span> solve_triangular
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>try</span>:
+</span></span><span style=display:flex><span>        L <span style=color:#f92672>=</span> cholesky(C)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>except</span> np<span style=color:#f92672>.</span>linalg<span style=color:#f92672>.</span>LinAlgError:
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span>  <span style=color:#ae81ff>9999</span>
+</span></span><span style=display:flex><span>        
+</span></span><span style=display:flex><span>    S1 <span style=color:#f92672>=</span> solve_triangular(L, y, lower<span style=color:#f92672>=</span><span style=color:#66d9ef>True</span>)
+</span></span><span style=display:flex><span>    S2 <span style=color:#f92672>=</span> solve_triangular(L<span style=color:#f92672>.</span>T, S1, lower<span style=color:#f92672>=</span><span style=color:#66d9ef>False</span>)
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> np<span style=color:#f92672>.</span>sum(np<span style=color:#f92672>.</span>log(np<span style=color:#f92672>.</span>diagonal(L))) <span style=color:#f92672>+</span> \
+</span></span><span style=display:flex><span>            <span style=color:#ae81ff>0.5</span> <span style=color:#f92672>*</span> y<span style=color:#f92672>.</span>dot(S2) <span style=color:#f92672>+</span> \
+</span></span><span style=display:flex><span>            <span style=color:#ae81ff>0.5</span> <span style=color:#f92672>*</span> len(y) <span style=color:#f92672>*</span> np<span style=color:#f92672>.</span>log(<span style=color:#ae81ff>2</span><span style=color:#f92672>*</span>np<span style=color:#f92672>.</span>pi)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#75715e>#return 0.5 * np.log(np.linalg.det(C)) + \</span>
+</span></span><span style=display:flex><span>    <span style=color:#75715e>#           0.5 * np.dot(y,np.linalg.inv(C)).dot(y) + \</span>
+</span></span><span style=display:flex><span>    <span style=color:#75715e>#           0.5 * len(y) * np.log(2*np.pi)</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#75715e># return const1 + const2 + const3</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>predict</span>(param, y1, y2, x1,x2, x1_star, x2_star, sigma):
+</span></span><span style=display:flex><span>    a1 <span style=color:#f92672>=</span> param[<span style=color:#ae81ff>0</span>]
+</span></span><span style=display:flex><span>    a2 <span style=color:#f92672>=</span> param[<span style=color:#ae81ff>1</span>]
+</span></span><span style=display:flex><span>    b1 <span style=color:#f92672>=</span> param[<span style=color:#ae81ff>2</span>]
+</span></span><span style=display:flex><span>    b2 <span style=color:#f92672>=</span> param[<span style=color:#ae81ff>3</span>]
+</span></span><span style=display:flex><span>    C_11 <span style=color:#f92672>=</span> C_ii(a1, b1, sigma,x1,x1)
+</span></span><span style=display:flex><span>    C_12 <span style=color:#f92672>=</span> C_ij(a1, a2,b1,b2,x1,x2)
+</span></span><span style=display:flex><span>    C_21 <span style=color:#f92672>=</span> C_ji(a1, a2,b1,b2,x1,x2)
+</span></span><span style=display:flex><span>    C_22 <span style=color:#f92672>=</span> C_ii(a2, b2, sigma,x2,x2)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    C <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>block([[C_11, C_12], [C_21, C_22]])
+</span></span><span style=display:flex><span>    y <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>concatenate((y1,y2))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    C_11_star <span style=color:#f92672>=</span> C_ii_pred(a1, b1,x1_star,x1)
+</span></span><span style=display:flex><span>    C_12_star <span style=color:#f92672>=</span> C_ij(a1, a2,b1,b2,x1_star,x2)
+</span></span><span style=display:flex><span>    C_21_star <span style=color:#f92672>=</span> C_ji(a1, a2, b1,b2,x1,x2_star)
+</span></span><span style=display:flex><span>    C_22_star <span style=color:#f92672>=</span> C_ii_pred(a2, b2,x2_star,x2)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    C_star <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>block([[C_11_star, C_12_star], [C_21_star, C_22_star]])
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> np<span style=color:#f92672>.</span>matmul(C_star,np<span style=color:#f92672>.</span>linalg<span style=color:#f92672>.</span>inv(C))<span style=color:#f92672>.</span>dot(y), C, C_star
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>a1 <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span>a2 <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span>b1 <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.2</span>
+</span></span><span style=display:flex><span>b2 <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.2</span> <span style=color:#75715e>#0.2</span>
+</span></span><span style=display:flex><span>sigma <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.1</span>
+</span></span><span style=display:flex><span>C_11 <span style=color:#f92672>=</span> C_ii(a1, b1, sigma,x1,x1)
+</span></span><span style=display:flex><span>C_12 <span style=color:#f92672>=</span> C_ij(a1, a2, b1,b2,x1,x2)
+</span></span><span style=display:flex><span>C_21 <span style=color:#f92672>=</span> C_ji(a1, a2, b1,b2,x1,x2)
+</span></span><span style=display:flex><span>C_22 <span style=color:#f92672>=</span> C_ii(a2, b2, sigma,x2,x2)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>C <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>block([[C_11, C_12], [C_21, C_22]])
+</span></span><span style=display:flex><span>y <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>concatenate((y1,y2))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>y_pred,_,_ <span style=color:#f92672>=</span> predict((a1, a2, b1, b2), y1, y2, x1,x2, x1, x2, sigma)
+</span></span><span style=display:flex><span>fig, ax <span style=color:#f92672>=</span> plt<span style=color:#f92672>.</span>subplots(<span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>2</span>, figsize <span style=color:#f92672>=</span> (<span style=color:#ae81ff>10</span>,<span style=color:#ae81ff>5</span>))
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>.</span>scatter(x1, y1, label <span style=color:#f92672>=</span><span style=color:#e6db74>&#39;original&#39;</span> )
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>.</span>plot(x1, y_pred[:<span style=color:#ae81ff>30</span>], label <span style=color:#f92672>=</span><span style=color:#e6db74>&#39;predicted&#39;</span> )
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>.</span>legend()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>1</span>]<span style=color:#f92672>.</span>scatter(x2, y2, label <span style=color:#f92672>=</span><span style=color:#e6db74>&#39;original&#39;</span> )
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>1</span>]<span style=color:#f92672>.</span>plot(x2, y_pred[<span style=color:#ae81ff>30</span>:], label <span style=color:#f92672>=</span><span style=color:#e6db74>&#39;predicted&#39;</span> )
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>1</span>]<span style=color:#f92672>.</span>legend()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>neg_lik(C,y)
+</span></span></code></pre></div><pre><code>29.1429757365891
+</code></pre><p><img src=DepGP_7_1.png alt=png></p><p>Our kernels seem to be working. Next, we define a function to estimate the hyperparameters using the marginal log-likelihood. First for the marginal case</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#f92672>from</span> scipy.optimize <span style=color:#f92672>import</span> minimize
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>objective_marginal</span>(param, y1, x1, sigma):
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    a1 <span style=color:#f92672>=</span> param[<span style=color:#ae81ff>0</span>]
+</span></span><span style=display:flex><span>    b1 <span style=color:#f92672>=</span> param[<span style=color:#ae81ff>1</span>]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    C_11 <span style=color:#f92672>=</span> C_ii(a1, b1,sigma,x1,x1)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    cost <span style=color:#f92672>=</span> neg_lik(C_11,y1)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> cost
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>predict_marginal</span>(param, y1, x1, x1_star,  sigma):
+</span></span><span style=display:flex><span>    a1 <span style=color:#f92672>=</span> param[<span style=color:#ae81ff>0</span>]
+</span></span><span style=display:flex><span>    b1 <span style=color:#f92672>=</span> param[<span style=color:#ae81ff>1</span>]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    C_11 <span style=color:#f92672>=</span> C_ii(a1, b1, sigma,x1,x1)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    C_11_star <span style=color:#f92672>=</span> C_ii_pred(a1, b1,x1,x1_star)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> np<span style=color:#f92672>.</span>matmul(C_11_star<span style=color:#f92672>.</span>T,np<span style=color:#f92672>.</span>linalg<span style=color:#f92672>.</span>inv(C_11))<span style=color:#f92672>.</span>dot(y1)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>out <span style=color:#f92672>=</span> minimize(objective_marginal, x0 <span style=color:#f92672>=</span> [<span style=color:#ae81ff>10</span>,<span style=color:#ae81ff>0.3</span>], args<span style=color:#f92672>=</span>(y1,x1, <span style=color:#ae81ff>0.1</span>),bounds<span style=color:#f92672>=</span>((<span style=color:#ae81ff>1e-5</span>, <span style=color:#ae81ff>100</span>), (<span style=color:#ae81ff>1e-5</span>, <span style=color:#ae81ff>100</span>)), method <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;L-BFGS-B&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>y_pred <span style=color:#f92672>=</span> predict_marginal(out<span style=color:#f92672>.</span>x, y1, x1,x1, sigma)
+</span></span><span style=display:flex><span>fig, ax <span style=color:#f92672>=</span> plt<span style=color:#f92672>.</span>subplots(<span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>1</span>, figsize <span style=color:#f92672>=</span> (<span style=color:#ae81ff>10</span>,<span style=color:#ae81ff>5</span>))
+</span></span><span style=display:flex><span>ax<span style=color:#f92672>.</span>scatter(x1, y1, label <span style=color:#f92672>=</span><span style=color:#e6db74>&#39;original&#39;</span> )
+</span></span><span style=display:flex><span>ax<span style=color:#f92672>.</span>plot(x1, y_pred[:<span style=color:#ae81ff>30</span>], label <span style=color:#f92672>=</span><span style=color:#e6db74>&#39;predicted&#39;</span> )
+</span></span><span style=display:flex><span>ax<span style=color:#f92672>.</span>legend()
+</span></span><span style=display:flex><span>out<span style=color:#f92672>.</span>x
+</span></span></code></pre></div><pre><code>array([0.12391961, 0.36522661])
+</code></pre><p><img src=DepGP_9_1.png alt=png></p><p>Seems to be working. Now we define a function to find the best hyperparameters of the joint process</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#f92672>from</span> scipy.optimize <span style=color:#f92672>import</span> minimize
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>objective</span>(param, y1, y2, x1,x2, sigma):
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    a1 <span style=color:#f92672>=</span> param[<span style=color:#ae81ff>0</span>]
+</span></span><span style=display:flex><span>    a2 <span style=color:#f92672>=</span> param[<span style=color:#ae81ff>1</span>]
+</span></span><span style=display:flex><span>    b1 <span style=color:#f92672>=</span> param[<span style=color:#ae81ff>2</span>]
+</span></span><span style=display:flex><span>    b2 <span style=color:#f92672>=</span> param[<span style=color:#ae81ff>3</span>]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    C_11 <span style=color:#f92672>=</span> C_ii(a1, b1,sigma,x1,x1)
+</span></span><span style=display:flex><span>    C_12 <span style=color:#f92672>=</span> C_ij(a1, a2,b1,b2,x1,x2)
+</span></span><span style=display:flex><span>    C_21 <span style=color:#f92672>=</span> C_ji(a1, a2,b1,b2,x1,x2)
+</span></span><span style=display:flex><span>    C_22 <span style=color:#f92672>=</span> C_ii(a2, b2,sigma,x2,x2)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    C <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>block([[C_11, C_12], [C_21, C_22]])
+</span></span><span style=display:flex><span>    y <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>concatenate((y1,y2))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    n1 <span style=color:#f92672>=</span> len(y1)
+</span></span><span style=display:flex><span>    n2 <span style=color:#f92672>=</span> len(y2)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    cost <span style=color:#f92672>=</span> neg_lik(C,y)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> cost
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>out <span style=color:#f92672>=</span> minimize(objective, x0 <span style=color:#f92672>=</span> [<span style=color:#ae81ff>0.5</span>,<span style=color:#ae81ff>0.5</span>, <span style=color:#ae81ff>0.1</span>, <span style=color:#ae81ff>0.1</span>], args<span style=color:#f92672>=</span>(y1,y2,x1,x2, <span style=color:#ae81ff>0.1</span>),bounds<span style=color:#f92672>=</span>((<span style=color:#ae81ff>1e-5</span>, <span style=color:#ae81ff>100</span>), (<span style=color:#ae81ff>1e-5</span>, <span style=color:#ae81ff>100</span>), (<span style=color:#ae81ff>1e-5</span>, <span style=color:#ae81ff>100</span>), (<span style=color:#ae81ff>1e-5</span>, <span style=color:#ae81ff>100</span>)), method <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;L-BFGS-B&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>y_pred,_,_ <span style=color:#f92672>=</span> predict(out<span style=color:#f92672>.</span>x, y1, y2, x1,x2,x1,x2, sigma)
+</span></span><span style=display:flex><span>fig, ax <span style=color:#f92672>=</span> plt<span style=color:#f92672>.</span>subplots(<span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>2</span>, figsize <span style=color:#f92672>=</span> (<span style=color:#ae81ff>10</span>,<span style=color:#ae81ff>5</span>))
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>.</span>scatter(x1, y1, label <span style=color:#f92672>=</span><span style=color:#e6db74>&#39;original&#39;</span> )
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>.</span>plot(x1, y_pred[:<span style=color:#ae81ff>30</span>], label <span style=color:#f92672>=</span><span style=color:#e6db74>&#39;predicted&#39;</span> )
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>.</span>legend()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>1</span>]<span style=color:#f92672>.</span>scatter(x2, y2, label <span style=color:#f92672>=</span><span style=color:#e6db74>&#39;original&#39;</span> )
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>1</span>]<span style=color:#f92672>.</span>plot(x2, y_pred[<span style=color:#ae81ff>30</span>:], label <span style=color:#f92672>=</span><span style=color:#e6db74>&#39;predicted&#39;</span> )
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>1</span>]<span style=color:#f92672>.</span>legend()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>out<span style=color:#f92672>.</span>x
+</span></span></code></pre></div><pre><code>array([0.11501486, 0.10188409, 0.3697313 , 0.40364407])
+</code></pre><p><img src=DepGP_11_1.png alt=png></p><p>Works. In the remaining part, we illustrate the usefulness of the framework. We mask a part of the data and try to predict it. First by using no information and then by using the information of process 2.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>y1_masked <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>concatenate((y1[:<span style=color:#ae81ff>7</span>], y1[<span style=color:#ae81ff>20</span>:]))
+</span></span><span style=display:flex><span>x1_masked <span style=color:#f92672>=</span>  np<span style=color:#f92672>.</span>concatenate((x1[:<span style=color:#ae81ff>7</span>], x1[<span style=color:#ae81ff>20</span>:]))
+</span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>scatter(x1_masked, y1_masked)
+</span></span></code></pre></div><pre><code>&lt;matplotlib.collections.PathCollection at 0x1171c85a0e0&gt;
+</code></pre><p><img src=DepGP_13_1.png alt=png></p><p>Marginal case (no information):</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>
+</span></span><span style=display:flex><span>out_marginal <span style=color:#f92672>=</span> minimize(objective_marginal, x0 <span style=color:#f92672>=</span> [<span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>0.01</span>], args<span style=color:#f92672>=</span>(y1_masked,x1_masked, <span style=color:#ae81ff>0.1</span>),
+</span></span><span style=display:flex><span>bounds<span style=color:#f92672>=</span>((<span style=color:#ae81ff>0.05</span>, <span style=color:#66d9ef>None</span>), (<span style=color:#ae81ff>0.05</span>, <span style=color:#66d9ef>None</span>)),
+</span></span><span style=display:flex><span> method <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;L-BFGS-B&#39;</span>)
+</span></span><span style=display:flex><span>out_marginal
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>y_pred <span style=color:#f92672>=</span> predict_marginal(out_marginal<span style=color:#f92672>.</span>x, y1_masked, x1_masked,x1, <span style=color:#ae81ff>0.1</span>)
+</span></span><span style=display:flex><span>fig, ax <span style=color:#f92672>=</span> plt<span style=color:#f92672>.</span>subplots(<span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>1</span>, figsize <span style=color:#f92672>=</span> (<span style=color:#ae81ff>10</span>,<span style=color:#ae81ff>5</span>))
+</span></span><span style=display:flex><span>ax<span style=color:#f92672>.</span>scatter(x1_masked, y1_masked, label <span style=color:#f92672>=</span><span style=color:#e6db74>&#39;Observed Data&#39;</span>, marker<span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;x&#39;</span> )
+</span></span><span style=display:flex><span>ax<span style=color:#f92672>.</span>scatter(x1, y1, label <span style=color:#f92672>=</span><span style=color:#e6db74>&#39;All Data&#39;</span>,alpha <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.3</span> )
+</span></span><span style=display:flex><span>ax<span style=color:#f92672>.</span>plot(x1, y_pred[:<span style=color:#ae81ff>30</span>], label <span style=color:#f92672>=</span><span style=color:#e6db74>&#39;predicted&#39;</span> )
+</span></span><span style=display:flex><span>ax<span style=color:#f92672>.</span>legend()
+</span></span><span style=display:flex><span>out<span style=color:#f92672>.</span>x
+</span></span></code></pre></div><pre><code>array([0.11501486, 0.10188409, 0.3697313 , 0.40364407])
+</code></pre><p><img src=DepGP_15_1.png alt=png></p><p>We see that the predictions are bad at the interval where we do not observe data. Next, we use the joint framework to extract information from the second process to use in the prediction.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>sigma <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.1</span>
+</span></span><span style=display:flex><span>out <span style=color:#f92672>=</span> minimize(objective, x0 <span style=color:#f92672>=</span> [<span style=color:#ae81ff>0.2</span>,<span style=color:#ae81ff>0.2</span>, <span style=color:#ae81ff>0.01</span>, <span style=color:#ae81ff>0.01</span>], args<span style=color:#f92672>=</span>(y1_masked,y2,x1_masked,x2, sigma),bounds<span style=color:#f92672>=</span>((<span style=color:#ae81ff>1e-5</span>, <span style=color:#ae81ff>100</span>), (<span style=color:#ae81ff>1e-5</span>, <span style=color:#ae81ff>100</span>), (<span style=color:#ae81ff>1e-5</span>, <span style=color:#ae81ff>100</span>), (<span style=color:#ae81ff>1e-5</span>, <span style=color:#ae81ff>100</span>)), method <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;L-BFGS-B&#39;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>y_pred, C,_ <span style=color:#f92672>=</span> predict(out<span style=color:#f92672>.</span>x, y1_masked, y2, x1_masked,x2,x1,x2, sigma) <span style=color:#75715e>#[0.1, 0.1, 0.1, 0.1]</span>
+</span></span><span style=display:flex><span>fig, ax <span style=color:#f92672>=</span> plt<span style=color:#f92672>.</span>subplots(<span style=color:#ae81ff>1</span>,<span style=color:#ae81ff>2</span>, figsize <span style=color:#f92672>=</span> (<span style=color:#ae81ff>10</span>,<span style=color:#ae81ff>5</span>))
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>.</span>scatter(x1_masked, y1_masked, label <span style=color:#f92672>=</span><span style=color:#e6db74>&#39;Observed Data&#39;</span>, marker<span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;x&#39;</span> )
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>.</span>scatter(x1, y1, label <span style=color:#f92672>=</span><span style=color:#e6db74>&#39;All Data&#39;</span>,alpha <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.3</span> )
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>.</span>plot(x1, y_pred[:<span style=color:#ae81ff>30</span>], label <span style=color:#f92672>=</span><span style=color:#e6db74>&#39;predicted&#39;</span> )
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>0</span>]<span style=color:#f92672>.</span>legend(bbox_to_anchor <span style=color:#f92672>=</span> (<span style=color:#ae81ff>0.35</span>,<span style=color:#ae81ff>0.2</span>))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>1</span>]<span style=color:#f92672>.</span>scatter(x2, y2, label <span style=color:#f92672>=</span><span style=color:#e6db74>&#39;original&#39;</span> )
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>1</span>]<span style=color:#f92672>.</span>plot(x2, y_pred[<span style=color:#ae81ff>30</span>:], label <span style=color:#f92672>=</span><span style=color:#e6db74>&#39;predicted&#39;</span> )
+</span></span><span style=display:flex><span>ax[<span style=color:#ae81ff>1</span>]<span style=color:#f92672>.</span>legend(bbox_to_anchor <span style=color:#f92672>=</span> (<span style=color:#ae81ff>0.35</span>,<span style=color:#ae81ff>0.2</span>))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>neg_lik(C,np<span style=color:#f92672>.</span>concatenate((y1_masked, y2)))
+</span></span><span style=display:flex><span>out<span style=color:#f92672>.</span>x
+</span></span></code></pre></div><p>array([0.13167358, 0.11177868, 0.35959916, 0.39335209])</p><p><img src=DepGP_18_2.png alt=png></p><p>We see that the prediction is a lot better</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>sns<span style=color:#f92672>.</span>heatmap(C)
+</span></span></code></pre></div><p><img src=DepGP_20_1.png alt=png></p></div></div></div><div class="layui-col-md4 layui-col-sm12 layui-col-xs12"><div class="layui-card single-card"><h2 class=single-title>Relevant Topics</h2><div style=margin-left:10px><blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px><a href=/post/deepkernel/><h3>Deep Graph Kernels</h3></a><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<span>2021-11-16</span>
+<i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
+<a href=/tags/graph/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Graph</span></a>
+<a href=/tags/classification/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Classification</span></a>
+<a href=/tags/kernel/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Kernel</span></a></h3></blockquote></div><br></div><div class="layui-card single-card"><h2 class=single-title>Recent Posts</h2><div style=margin-left:10px><blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px><a href=/post/depgp/><h3>Dependent Gaussian Processes</h3></a><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<span>2022-06-30</span>
+<i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
+<a href=/tags/kernel/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Kernel</span></a></h3></blockquote></div><div style=margin-left:10px><blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px><a href=/post/nnfun/><h3>Neural Networks for Insurance Pricing</h3></a><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<span>2022-04-11</span>
+<i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
+<a href=/tags/model/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Model</span></a></h3></blockquote></div><div style=margin-left:10px><blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px><a href=/post/glm/><h3>Generalized Linear Models</h3></a><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<span>2022-03-02</span>
+<i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
+<a href=/tags/model/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Model</span></a></h3></blockquote></div><div style=margin-left:10px><blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px><a href=/post/hmm/><h3>Hidden Markov Models</h3></a><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<span>2022-02-15</span>
+<i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
+<a href=/tags/model/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Model</span></a>
+<a href=/tags/classification/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Classification</span></a></h3></blockquote></div><div style=margin-left:10px><blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px><a href=/post/extremes/><h3>Quntitative Risk Analysis</h3></a><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<span>2021-11-17</span>
+<i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
+<a href=/tags/risk/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Risk</span></a>
+<a href=/tags/extremes/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Extremes</span></a></h3></blockquote></div><br></div></div></div></div></div><footer><div class=layui-container><p class=copyright>&copy; All rights reserved. Powered by <a href=https://gohugo.io style=color:#fff>Hugo</a>, <a href=https://github.com/ertuil/erblog style=color:#fff>Erblog</a> and <a href=https://github.com/vlunot/nb2hugo style=color:#fff>nb2hugo</a>.</p></div></footer></body></html>
