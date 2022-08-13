@@ -25,9 +25,9 @@ footnoteReturnLinkContents = "^"
 
 
 [[menu.main]]
-    identifier = "Publications"
+    identifier = "publications"
     name = "Publications"
-    url = "/Publications/"
+    url = "/publications/"
     weight = 10
 
 [[menu.main]]
