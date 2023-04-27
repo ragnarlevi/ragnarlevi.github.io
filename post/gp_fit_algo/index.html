@@ -170,65 +170,7 @@ $$</p><p>where $K_{newnew} = K(X_{new},X_{new})$ and $K_{new} = K(X,X_{new})$</p
 </span></span><span style=display:flex><span>y_pred_ep <span style=color:#f92672>=</span> predict_ep(nu_tilde, tau_tilde, K, Kstar, Ktest)
 </span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>plot(x_test,y_pred_ep)
 </span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>scatter(x_test, y_test)
-</span></span></code></pre></div><p><img src=GP_fit_algo_25_1.png alt=png></p><h1 id=variational-inference>Variational Inference</h1><p>We wan to maximize the elbow</p><p>$$ELBO = \int \log p(y|f)q(f)df - \text{KL}[q(f)||p(f)]$$</p><p>the KL term is analytical as $q$ and $p$ are Gaussians. The likelihood is harder. It is possible to write
-$$
-\begin{split}
-\int \log p(y|f)q(f)df = \sum_i \int p(y_i|f_i)q(f_i)df
-\end{split}
-$$</p><p>which we can approximate with a Gaussain quadrature. This code is not good, might look into this at a future time again.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>ELBO</span>(y, Sigma, mu, K):
-</span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>    <span style=color:#75715e># Gaussain quadrature.</span>
-</span></span><span style=display:flex><span>    integral <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.0</span>
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(len(y)):
-</span></span><span style=display:flex><span>        u <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>linspace(<span style=color:#f92672>-</span><span style=color:#ae81ff>4</span>,<span style=color:#ae81ff>4</span>,<span style=color:#ae81ff>10000</span>)
-</span></span><span style=display:flex><span>        t <span style=color:#f92672>=</span> u<span style=color:#f92672>/</span>np<span style=color:#f92672>.</span>sqrt(<span style=color:#ae81ff>2</span>)
-</span></span><span style=display:flex><span>        w <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>exp(<span style=color:#f92672>-</span>t<span style=color:#f92672>**</span><span style=color:#ae81ff>2</span>)<span style=color:#f92672>/</span>np<span style=color:#f92672>.</span>sqrt(np<span style=color:#f92672>.</span>pi)
-</span></span><span style=display:flex><span>        x <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>sqrt(<span style=color:#ae81ff>2</span>)<span style=color:#f92672>*</span>Sigma[i,i]<span style=color:#f92672>*</span>t <span style=color:#f92672>+</span> mu[i]
-</span></span><span style=display:flex><span>        ratio <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>exp(x)<span style=color:#f92672>/</span>(<span style=color:#ae81ff>1</span><span style=color:#f92672>+</span>np<span style=color:#f92672>.</span>exp(x))
-</span></span><span style=display:flex><span>        F_t <span style=color:#f92672>=</span> y[i]<span style=color:#f92672>*</span>np<span style=color:#f92672>.</span>log(ratio) <span style=color:#f92672>+</span> (<span style=color:#ae81ff>1</span><span style=color:#f92672>-</span>y[i])<span style=color:#f92672>*</span>np<span style=color:#f92672>.</span>log(<span style=color:#ae81ff>1</span><span style=color:#f92672>-</span>ratio) 
-</span></span><span style=display:flex><span>        integral <span style=color:#f92672>+=</span> np<span style=color:#f92672>.</span>sum(w<span style=color:#f92672>*</span>F_t)<span style=color:#f92672>/</span><span style=color:#ae81ff>10000</span>
-</span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>    <span style=color:#75715e># KL</span>
-</span></span><span style=display:flex><span>    n <span style=color:#f92672>=</span> K<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>]
-</span></span><span style=display:flex><span>    I <span style=color:#f92672>=</span> <span style=color:#ae81ff>1e-5</span><span style=color:#f92672>*</span>np<span style=color:#f92672>.</span>identity(n)
-</span></span><span style=display:flex><span>    K_inv<span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>linalg<span style=color:#f92672>.</span>inv(K<span style=color:#f92672>+</span>I)
-</span></span><span style=display:flex><span>    n <span style=color:#f92672>=</span> float(n)
-</span></span><span style=display:flex><span>    KL <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.5</span><span style=color:#f92672>*</span>(np<span style=color:#f92672>.</span>log(np<span style=color:#f92672>.</span>linalg<span style=color:#f92672>.</span>det(K <span style=color:#f92672>+</span> I)) <span style=color:#f92672>-</span> np<span style=color:#f92672>.</span>log(np<span style=color:#f92672>.</span>linalg<span style=color:#f92672>.</span>det(Sigma <span style=color:#f92672>+</span> I)) <span style=color:#f92672>-</span> n <span style=color:#f92672>+</span> np<span style=color:#f92672>.</span>trace(np<span style=color:#f92672>.</span>dot(K_inv, Sigma)) <span style=color:#f92672>+</span> np<span style=color:#f92672>.</span>dot(mu, K_inv)<span style=color:#f92672>.</span>dot(mu) )
-</span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>    print(integral <span style=color:#f92672>-</span> KL)
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> (integral <span style=color:#f92672>-</span> KL)
-</span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>obj_fun_elbo</span>(par, y,K):
-</span></span><span style=display:flex><span>    n <span style=color:#f92672>=</span> K<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>]
-</span></span><span style=display:flex><span>    <span style=color:#75715e>#Sigma = np.zeros((n,n))</span>
-</span></span><span style=display:flex><span>    <span style=color:#75715e>#Sigma[np.triu_indices(n)] = par[:int(n*(n+1)/2)]</span>
-</span></span><span style=display:flex><span>    <span style=color:#75715e>#Sigma = np.triu(Sigma) + np.triu(K, 1).T</span>
-</span></span><span style=display:flex><span>    <span style=color:#75715e>#mu = par[int(n*(n+1)/2):]</span>
-</span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>    Sigma <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>diag(par[:n]<span style=color:#f92672>**</span><span style=color:#ae81ff>2</span>)
-</span></span><span style=display:flex><span>    mu <span style=color:#f92672>=</span> par[n:]
-</span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>    l, _ <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>linalg<span style=color:#f92672>.</span>eigh(Sigma)
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>assert</span> np<span style=color:#f92672>.</span>all(l <span style=color:#f92672>&gt;</span><span style=color:#ae81ff>0</span>)
-</span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#f92672>-</span>ELBO(y, Sigma, mu, K)
-</span></span></code></pre></div><p>Perform minimization, this will take a while&mldr;.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>n <span style=color:#f92672>=</span> K<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>0</span>]
-</span></span><span style=display:flex><span>sigma_0 <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>identity(n)
-</span></span><span style=display:flex><span>x0 <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>hstack([np<span style=color:#f92672>.</span>ones(n), np<span style=color:#f92672>.</span>zeros(n)])
-</span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>out_var_inf <span style=color:#f92672>=</span> minimize(obj_fun_elbo, x0 <span style=color:#f92672>=</span> x0, args <span style=color:#f92672>=</span> (y_train,K), method <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;L-BFGS-B&#39;</span>)
-</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>plt<span style=color:#f92672>.</span>plot(x_train,out_var_inf<span style=color:#f92672>.</span>x[n:])
-</span></span></code></pre></div><p><img src=GP_fit_algo_31_1.png alt=png></p><p>Find predictive</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>I <span style=color:#f92672>=</span> <span style=color:#ae81ff>1e-5</span><span style=color:#f92672>*</span>np<span style=color:#f92672>.</span>identity(n)
-</span></span><span style=display:flex><span>K_inv<span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>linalg<span style=color:#f92672>.</span>inv(K<span style=color:#f92672>+</span>I)
-</span></span><span style=display:flex><span>f_var <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>dot(Kstar<span style=color:#f92672>.</span>T, K_inv)<span style=color:#f92672>.</span>dot(out_var_inf<span style=color:#f92672>.</span>x[n:])
-</span></span><span style=display:flex><span>y_pred_vp <span style=color:#f92672>=</span> sigma(f_var)
-</span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>plot(x_test,y_pred_vp)
-</span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>scatter(x_test, y_test)
-</span></span></code></pre></div><p><img src=GP_fit_algo_33_1.png alt=png></p><p>mean clsoe to 0.5, might be some error here</p><h1 id=mcmc>MCMC</h1><p>Using MCMC we can sample local regions instead of iteratively drawing samples from each posterior conditional density $p(f_i| f_{i},y)$ seperately. If $f_k$ are function points in region $k$. Then we can propose values from the conditional GP prior $Q(f^{t}|f^{t-1})= p(f_k^{t} | f_{-k}^{t-1})$. The proposed points are accepted with probability $\min(1,A)$ where</p><p>$$
+</span></span></code></pre></div><p><img src=GP_fit_algo_25_1.png alt=png></p><h1 id=mcmc>MCMC</h1><p>Using MCMC we can sample local regions instead of iteratively drawing samples from each posterior conditional density $p(f_i| f_{i},y)$ seperately. If $f_k$ are function points in region $k$. Then we can propose values from the conditional GP prior $Q(f^{t}|f^{t-1})= p(f_k^{t} | f_{-k}^{t-1})$. The proposed points are accepted with probability $\min(1,A)$ where</p><p>$$
 \begin{split}
 A &= \frac{p(f^t | y)/Q(f^t|f^{t-1})}{p(f^{t-1} | y)/Q(f^{t-1}|f^{t})} \\
 &= \frac{p(y|f_k^t,f_{-k}^{t-1})p(f_k^t,f_{-k}^{t-1})p(f_k^{t-1}|f_{-k}^{t-1})}{p(y|f_k^{t-1},f_{-k}^{t-1})p(f_k^{t-1},f_{-k}^{t-1})p(f_k^{t}|f_{-k}^{t-1})} \\
@@ -283,11 +225,10 @@ $$</p><p>I like to think that we are contitioning on $f_{-k}^t = f_{-k}^{t-1}$ a
 </span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>scatter(x_test, y_test)
 </span></span></code></pre></div><p><img src=GP_fit_algo_44_1.png alt=png></p><h1 id=compare>Compare</h1><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>plt<span style=color:#f92672>.</span>plot(x_test,y_pred_ep, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;EP&#34;</span>)
 </span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>plot(x_test,y_pred_laplace, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;Laplace&#34;</span>)
-</span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>plot(x_test,y_pred_vp, label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;VP&#34;</span>)
 </span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>plot(x_test,sigma(f_m_mcmc), label <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;MCMC&#34;</span>)
 </span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>scatter(x_test, y_test)
 </span></span><span style=display:flex><span>plt<span style=color:#f92672>.</span>legend()
-</span></span></code></pre></div><p><img src=GP_fit_algo_46_1.png alt=png></p><p>EP and VI give a little strange results, might be something wrong, especally with the VI which I know is very slow and assuming factoruized $q$ is not a very realistic assumption.</p></div></div></div><div class="layui-col-md4 layui-col-sm12 layui-col-xs12"><div class="layui-card single-card"><h2 class=single-title>Relevant Topics</h2><div style=margin-left:10px><blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px><a href=/post/deepkernel/><h3>Deep Graph Kernels</h3></a><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+</span></span></code></pre></div><p><img src=GP_fit_algo_46_1.png alt=png></p><p>EP and VI give a little strange results.</p></div></div></div><div class="layui-col-md4 layui-col-sm12 layui-col-xs12"><div class="layui-card single-card"><h2 class=single-title>Relevant Topics</h2><div style=margin-left:10px><blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px><a href=/post/deepkernel/><h3>Deep Graph Kernels</h3></a><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
 <span>2021-11-16</span>
 <i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
 <a href=/tags/graph/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Graph</span></a>
