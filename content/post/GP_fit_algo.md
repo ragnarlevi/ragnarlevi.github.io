@@ -348,118 +348,7 @@ plt.scatter(x_test, y_test)
     
 
 
-# Variational Inference
 
-We wan to maximize the elbow
-
-$$ELBO = \int \log p(y|f)q(f)df - \text{KL}[q(f)||p(f)]$$
-
-the KL term is analytical as $q$ and $p$ are Gaussians. The likelihood is harder. It is possible to write
-$$
-\begin{split}
-\int \log p(y|f)q(f)df = \sum_i \int p(y_i|f_i)q(f_i)df 
-\end{split}
-$$
-
-which we can approximate with a Gaussain quadrature. This code is not good, might look into this at a future time again.
-
-
-
-
-
-```python
-
-def ELBO(y, Sigma, mu, K):
-
-    # Gaussain quadrature.
-    integral = 0.0
-    for i in range(len(y)):
-        u = np.linspace(-4,4,10000)
-        t = u/np.sqrt(2)
-        w = np.exp(-t**2)/np.sqrt(np.pi)
-        x = np.sqrt(2)*Sigma[i,i]*t + mu[i]
-        ratio = np.exp(x)/(1+np.exp(x))
-        F_t = y[i]*np.log(ratio) + (1-y[i])*np.log(1-ratio) 
-        integral += np.sum(w*F_t)/10000
-
-    # KL
-    n = K.shape[0]
-    I = 1e-5*np.identity(n)
-    K_inv= np.linalg.inv(K+I)
-    n = float(n)
-    KL = 0.5*(np.log(np.linalg.det(K + I)) - np.log(np.linalg.det(Sigma + I)) - n + np.trace(np.dot(K_inv, Sigma)) + np.dot(mu, K_inv).dot(mu) )
-
-    print(integral - KL)
-    return (integral - KL)
-
-
-def obj_fun_elbo(par, y,K):
-    n = K.shape[0]
-    #Sigma = np.zeros((n,n))
-    #Sigma[np.triu_indices(n)] = par[:int(n*(n+1)/2)]
-    #Sigma = np.triu(Sigma) + np.triu(K, 1).T
-    #mu = par[int(n*(n+1)/2):]
-
-    Sigma = np.diag(par[:n]**2)
-    mu = par[n:]
-
-    l, _ = np.linalg.eigh(Sigma)
-    assert np.all(l >0)
-
-    return -ELBO(y, Sigma, mu, K)
-
-
-
-
-```
-
-Perform minimization, this will take a while....
-
-
-```python
-n = K.shape[0]
-sigma_0 = np.identity(n)
-x0 = np.hstack([np.ones(n), np.zeros(n)])
-
-out_var_inf = minimize(obj_fun_elbo, x0 = x0, args = (y_train,K), method = 'L-BFGS-B')
-```
-
-
-
-```python
-plt.plot(x_train,out_var_inf.x[n:])
-```
-
-
-
-
-
-    
-![png](GP_fit_algo_31_1.png)
-    
-
-
-Find predictive
-
-
-```python
-I = 1e-5*np.identity(n)
-K_inv= np.linalg.inv(K+I)
-f_var = np.dot(Kstar.T, K_inv).dot(out_var_inf.x[n:])
-y_pred_vp = sigma(f_var)
-
-
-plt.plot(x_test,y_pred_vp)
-plt.scatter(x_test, y_test)
-```
-
-
-    
-![png](GP_fit_algo_33_1.png)
-    
-
-
-mean clsoe to 0.5, might be some error here
 
 # MCMC
 
@@ -583,7 +472,6 @@ plt.scatter(x_test, y_test)
 ```python
 plt.plot(x_test,y_pred_ep, label = "EP")
 plt.plot(x_test,y_pred_laplace, label = "Laplace")
-plt.plot(x_test,y_pred_vp, label = "VP")
 plt.plot(x_test,sigma(f_m_mcmc), label = "MCMC")
 plt.scatter(x_test, y_test)
 plt.legend()
@@ -597,6 +485,6 @@ plt.legend()
 ![png](GP_fit_algo_46_1.png)
     
 
-EP and VI give a little strange results, might be something wrong, especally with the VI which I know is very slow and assuming factoruized $q$ is not a very realistic assumption.
+EP and VI give a little strange results.
 
 
