@@ -27,8 +27,7 @@ E[\frac{\partial}{\partial\theta}\log f] &= E[\frac{1}{f}\frac{\partial}{\partia
 &=\frac{\partial }{\partial\theta} 1 = 0
 \end{split}
 \end{equation}
-$$</p><p>This formula gives us the mean function $E[y] =\mu = b&rsquo;(\theta)$
-. The information equality is:</p><p>$$
+$$</p><p>This formula gives us the mean function $E[y] =\mu = b&rsquo;(\theta)$. The information equality is:</p><p>$$
 \begin{split}
 E\Big[\frac{\partial^2}{\partial\theta\partial\theta^T}\log f\Big] &= E\Big[\frac{\partial}{\partial\theta} (\frac{1}{f}\frac{\partial f}{\partial\theta^T})\Big]\\\
 &= -E\Big[\frac{1}{f^2}\frac{\partial f}{\partial\theta}\frac{\partial f}{\partial\theta^T}\Big] + E\Big[\frac{1}{f}\frac{\partial^2 f}{\partial\theta\partial\theta^T}\Big]\\\
@@ -36,8 +35,7 @@ E\Big[\frac{\partial^2}{\partial\theta\partial\theta^T}\log f\Big] &= E\Big[\fra
 &= - E\Big[ (\frac{\partial\log f}{\partial\theta})(\frac{\partial\log f}{\partial\theta})^T\Big]
 \end{split}
 $$</p><p>Which can be seen as $Var(\frac{\partial}{\partial\theta}\log f) = - E\Big[\frac{\partial^2}{\partial\theta\partial\theta^T}\log f\Big]$. The information equality gives the variance function $Var(y) = a(\phi)b&rsquo;&rsquo;(\theta)$. GLMs make use of a linear predictor $\eta = x^T\beta$ where $x$ is a vector of features and $\beta$ the regression parameters to be estimated. The third part of GLMs is the
-link function, which connects $\eta$ to $\mu$ via a function $g$, $g(\mu) =\eta$
-.</p><p>A typical example is the binomial response model $y\sim Bin(n,\pi)$
+link function, which connects $\eta$ to $\mu$ via a function $g$, $g(\mu) =\eta$.</p><p>A typical example is the binomial response model $y\sim Bin(n,\pi)$
 gives:
 $$\log f =\frac{y\log(\frac{\pi}{1-\pi}) +\log(1-\pi)}{1} + const$$
 The canonical parameter is $\theta =\log(\frac{\pi}{1-\pi})$ and $\phi = 1$ Another example is the Poisson response model, $y\sim Poi(\lambda)$
@@ -53,27 +51,23 @@ $$\frac{\partial l}{\partial\theta} =\frac{y-b&rsquo;(\theta)}{a(\phi)} =\frac{y
 using the fact that $\mu = b&rsquo;(\theta)$ and that $f&rsquo;(x) =\frac{1}{(f^{-1})&rsquo;(y)}$
 we have:
 $$\frac{\partial\theta}{\partial\mu} =\frac{1}{b&rsquo;&rsquo;(\theta)} =\frac{a(\phi)}{Var(y)}$$ $\frac{\partial\mu}{\partial\eta}$ will depend on the link and $\frac{\partial\eta }{\partial\beta_i} = x_{ji}$. If we use a canonical link we have $\frac{\partial\mu}{\partial\eta} =\frac{\partial\mu}{\partial\theta} = b&rsquo;&rsquo;(\theta)$
-. Also if we use a canonical link than Fisher scoring optimization
+. Also if we use a canonical link then the Fisher scoring optimization
 procedure is the same thing as Newton-Raphson optimization.</p><p>The dispersion parameter is usually fitted separately using a
 traditional estimate of the variance.</p><p>Finally to comment on diagnostics. We can inspect the residuals, either
-the Pearson residual defined as
+the Pearson residual is defined as
 $$r_i =\frac{y_i -\widehat{\mu}}{\sqrt{\widehat{Var}(y)}}=\frac{y_i -\widehat{\mu}}{\sqrt{a(\hat{\phi})V(\hat{\mu})}}$$</p><p>or the deviance residual</p><p>$r_i = sign(y-\mu)\sqrt{d}_i$</p><p>where $d_i$ is the deviance of observation $i$. If we plot the $\hat{\eta}$ as a function of the residuals, we should see a horizontal band with
-mean approximately zero, something similar to a whitenoise. If there is
+a mean of approximately zero, something similar to white noise. If there is
 a curvature in the plot then we might have a wrong link function or we
-are missing some nonlinear feature, for example $x^2$
-. If the horizontal band is not symmetric, not symmetric, or many
-outliers then the variance function may be incorrect, for example too
-low or high dispersion.</p><p>If we plot individual features vs residuals vs we should also get a
-horizontal band. A curvature suggest that the feature should be
-nonlinear</p><p>If we plot the fitted values vs absolute residuals and do not see any
+are missing some nonlinear feature, for example, $x^2$. If the horizontal band is not symmetric, not symmetric, or many outliers then the variance function may be incorrect, for example too low or high dispersion.</p><p>If we plot individual features vs residuals vs we should also get a
+horizontal band. A curvature suggests that the feature should be
+nonlinear.</p><p>If we plot the fitted values vs absolute residuals and do not see any
 trend, then the variance function is ok. However, if there is a trend
 then the variance function is incorrect. However, if we are in a certain
-paramteric family then we can not really change the variance function.
+parametric family then we can not change the variance function.
 However, we could perform a quasi-likelihood approach.</p><p>The main idea of the quasi-likelihood is to relax the exponential family
 assumption and allow a more general variance component $\phi V(\mu)$ to define a quasi-score $\tilde{S} =\frac{y-\mu}{\phi V(\mu)}$. The quasi-score is similar to the score, namely, it satisfies the
 expected score and information formulas $E[\tilde{S}]$ and $Var(\tilde{S}) =\frac{1}{\phi V(\mu)}$. As the score is the derivative of the log-likelihood, the quasi
-log-likelihood $Q$
-is the integral of the quasi score:
+log-likelihood $Q$ is the integral of the quasi score:
 $$Q(y;\mu) =\int_{y}^\mu\frac{y-t}{\phi V(t)} dt $$</p></div></div></div><div class="layui-col-md4 layui-col-sm12 layui-col-xs12"><div class="layui-card single-card"><h2 class=single-title>Relevant Topics</h2><div style=margin-left:10px><blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px><a href=/post/hmm/><h3>Hidden Markov Models</h3></a><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
 <span>2022-02-15</span>
 <i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
