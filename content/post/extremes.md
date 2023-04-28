@@ -5,7 +5,7 @@ author = "Ragnar Levi Gudmundarson"
 tags = ["Risk", "Extremes"]
 +++
 
-In this notebook I will discuss the basic ideas of modelling quantiles and copula dependence. These ideas are important for risk managers as International banking regulations require banks to pay specific attention to the probability of large losses over short periods of time and undeerestimation of dependence among extreme risks can lead to serious consequences, as for instance those we experienced during the last financial crisis. Including extreme risks in probabilistic models is recognized nowadays as a necessary condition for good risk management in any institution, and not restricted anymore to reinsurance companies, who are the providers of covers for natural catastrophes. One of the main problems that come up is the fact that the observed data usually only includes few extreme obervations and the never exceed the maximum historical observation, meaning we only have a truncated version of the "real" distribution. This makes simulation of extreme values problematic. For a more detailed overview see [Gilli](https://www.econbiz.de/Record/an-application-of-extreme-value-theory-for-measuring-financial-risk-gilli-manfred/10005701798) or [Kratz](https://link.springer.com/chapter/10.1007/978-3-030-04161-8_51)
+In this notebook, I will discuss the basic ideas of modelling quantiles and copula dependence. These ideas are important for risk managers as International banking regulations require banks to pay specific attention to the probability of large losses over short periods and the underestimation of dependence on extreme risks can lead to serious consequences, for instance, those we experienced during the last financial crisis. Including extreme risks in probabilistic models is recognized nowadays as a necessary condition for good risk management in any institution, and is not restricted anymore to reinsurance companies, who are the providers of covers for natural catastrophes. One of the main problems that come up is the fact that the observed data usually only includes a few extreme observations and never exceeds the maximum historical observation, meaning we only have a truncated version of the "real" distribution. This makes the simulation of extreme values problematic. For a more detailed overview see [Gilli](https://www.econbiz.de/Record/an-application-of-extreme-value-theory-for-measuring-financial-risk-gilli-manfred/10005701798) or [Kratz](https://link.springer.com/chapter/10.1007/978-3-030-04161-8_51)
 
 
 
@@ -127,12 +127,10 @@ mu_normal
 
 ## A normal distribution
 
-For the normal distribution we simply use the well known maximum likelihood estimators for parameters.
+For the normal distribution, we simply use the well-known maximum likelihood estimators for parameters.
 
 
-```python
 
-```
 
 
 ```python
@@ -188,14 +186,9 @@ plt.plot(sorted(sp500['log_return']),normal_fit, label = 'norm-dist')
 plt.legend()
 ```
 
-
-
-
-
     
 ![png](extremes_19_1.png)
     
-
 
 
 ```python
@@ -214,7 +207,7 @@ ax.set_ylim([-0.1, 0.1])
     
 
 
-## non-central-t-distribution
+## non-central t distribution
 
 The skewness of the sp500 data is
 
@@ -231,7 +224,7 @@ skew(sp500['log_return'])
 
 
 
-Thus, it is natural to consider a distribution that is not symmetric. We have to run a optimization algorithm
+Thus, it is natural to consider a distribution that is not symmetric, such as the non-central t distribution. We have to run an optimization algorithm to find the parameters:
 
 
 ```python
@@ -622,7 +615,7 @@ nasdaq_garch_fit.resid
 
 ## Copula fit
 
-First fit the marginals
+First, fit the marginals
 
 
 ```python
@@ -680,7 +673,7 @@ theta
 
 ## Simulating Copulas
 
-We can simulate from paramteric copulas, using the following conditional probability:
+We can simulate from parameteric copulas, using the following conditional probability:
 
 $$ C_{u_1}(u_2) =  P( U_2 < u_2 | U_1 = u_1) = \lim_{h \to 0} \frac{C(u_1 + h,u_2) - C(u_1,u_2)}{h} = \frac{\partial C(u_1, u_2)}{\partial u_1}$$
 

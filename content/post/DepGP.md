@@ -18,14 +18,13 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 ```
 
-Consider a device that operates on a continuous, real valuedinput signal overtime $x(t)$ and emits a continuous real valued output $y(t)$. This device is a linear time invariant (LTI) fiter if it is 
-* Linear: If $x(t) = x_1(t)+x_2(t) then the outpus is $y(t) = y_1(t) + y_2(t)
+Consider a device that operates on a continuous, real-valued input signal overtime $x(t)$ and emits a continuous real-valued output $y(t)$. This device is a linear time-invariant (LTI) filter if it is 
+* Linear: If $x(t) = x_1(t)+x_2(t) then the output is $y(t) = y_1(t) + y_2(t)
 * Time invariant: The output response to a shifted input $x(t+ \tau)$ is $y(t+ \tau)$
 
-An LTI filter is completely characterized by its impulse response, $h(t)$, which is equivalent to the output when the filter is stimulated by a unit impulse $\delta(t)$.Given the impulse response, we can find the output of the filter in response to any finite input via convolution:
+An LTI filter is completely characterized by its impulse response, $h(t)$, which is equivalent to the output when the filter is stimulated by a unit impulse $\delta(t)$. Given the impulse response, we can find the output of the filter in response to any finite input via convolution:
 
 $$ y(t) = h(t) * x(t) = \int h(t-\tau)x(\tau)d\tau$$
-
 
 
 When a linear filter is excited with Gaussian white noise $w(t)$, the covariance function of a zero-mean output process can be shown to be:
@@ -38,7 +37,7 @@ $$ cov(y_1(t), y_2(t') = \int h_1(\tau) h_2(t' -t +\tau)d\tau$$
 
 where $h_i$ is the filter of process $y_i$.
 
-If we define use a gaussian filter 
+If we define a Gaussian filter 
 
 $$ h(x) = b \exp \big( -0.5 ax^2 \big)$$
 
@@ -50,9 +49,10 @@ $$ cov_{ij}(t-t') = \frac{(2\pi)^{1/2} b_i b_j}{\sqrt(a_i + a_j) }  \exp \big( -
 Note that we can define this for the case when $t$ is a vector as well.
 
 
-To motivate why this formulation is useful. We show that we can use the one process say $y_2$ at time $t$ to predict unobserved values of $y_1$ at time $t$
+To motivate why this formulation is useful. We show that we can use one process say $y_2$ at time $t$ to predict unobserved values of $y_1$ at time $t$
 
 We start by simulating two dependent processes
+
 
 
 ```python
@@ -211,7 +211,7 @@ neg_lik(C,y)
     
 
 
-Our kernels seem to be working. Next, we define a function to estimate the hyperparameters using the marginal log-likelihood. First for the marginal case
+Our kernels seem to be working. Next, we define a function to estimate the hyperparameters using the marginal log-likelihood. For the marginal case:
 
 
 ```python
@@ -401,14 +401,8 @@ out.x
 array([0.13167358, 0.11177868, 0.35959916, 0.39335209])
     
 
-
-
-
-
 ![png](DepGP_18_2.png)
     
-
-
 We see that the prediction is a lot better
 
 

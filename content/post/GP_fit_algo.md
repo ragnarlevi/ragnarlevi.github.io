@@ -7,7 +7,7 @@ tags = ["Classification", "Kernel"]
 
 
 
-In this notebook I will be trying to fit a Gaussian Process classification from scratch on very simple simulated data. I will use the laplacian, expectation propagation, variational inference (which will need some rework) and MH MCMC.
+In this notebook I will be trying to fit a Gaussian Process classification from scratch on very simple simulated data. I will use the laplacian, expectation propagation,  and MH MCMC.
 
 ```python
 import numpy as np
@@ -56,9 +56,9 @@ The problem with Gaussian Process classification is that the posterior
 
 $$p(f_{new} | X, y,x_{new}) = \int p(f_{new} | X,x_{new}, f) p(f | X,y ) df$$
 
-,where $f_{new}$ is the test function and is $x_{new}$ is the test input ,is not tractable . We will look at methods that approximate the psoterior to make the integral tractable. We find some distribution $q$ to be close to $p(f | X,y )$. We know of to deal with Guassian so we assume $q$ is Gaussian.
+,where $f_{new}$ is the test function and is $x_{new}$ is the test input ,is not tractable . We will look at methods that approximate the posterior to make the integral tractable. We find some distribution $q$ to be close to $p(f | X,y )$. We know of to deal with Guassian so we assume $q$ is Gaussian.
 
-Once we have found $q$ we can approximate the integral by replacing $p(f|x,y)$ with $q(f|x,y;\mu, \Sigma)$ (once we have found $\mu$ and $\Sigma$). We know that the two Gaussian integrated together will be another Gaussian with mean.
+Once we have found $q$ we can approximate the integral by replacing $p(f|x,y)$ with $q(f|x,y;\mu, \Sigma)$ (once we have found $\mu$ and $\Sigma$). We know that the two Gaussians integrated together will be another Gaussian with mean:
 
 $$E[f_{new} | X, y,x_{new}] = E[E[f_{new} | X, y,x_{new},f]| X, y,x_{new}] = E[K_{new}K^{-1}f| X, y,x_{new}] = K_{new}K^{-1}\mu$$
 
@@ -76,7 +76,8 @@ where $K_{newnew} = K(X_{new},X_{new})$ and $K_{new} = K(X,X_{new})$
 
 
 
-Functions for the sigmoid, log-likelihood. Also calcualte the kernel assuming a RBF kernel. Just set some gamma parameter that should be good enough
+Functions for the sigmoid, log-likelihood. Also, calculate the kernel assuming an RBF kernel. Just set some gamma parameters that should be good enough
+
 
 
 ```python
@@ -173,7 +174,8 @@ plt.scatter(x_test, y_test)
     
 
 
-We can also predict using averaged predictive probability, $\hat{\pi} = \int \sigma(f_{new}) q(f_{new},X,y,x_{new}) df_{new}$, the integral is not tractable so the logistic is usally approximated by the probit.
+
+We can also predict using averaged predictive probability, $\hat{\pi} = \int \sigma(f_{new}) q(f_{new},X,y,x_{new}) df_{new}$, the integral is not tractable so the logistic is usually approximated by the probit.
 
 
 ```python
@@ -284,7 +286,7 @@ nu_tilde, tau_tilde = ep_gp(K, y_train)
 ```
 
 
-With these parameters we can get the mean of the latent gaussian process (train) using the same equations as for "normal" gaussian processes as we have approximated the likelihood with a normal
+With these parameters, we can get the mean of the latent Gaussian process (train) using the same equations as for "normal" Gaussian processes as we have approximated the likelihood with a normal
 
 
 ```python
@@ -352,7 +354,7 @@ plt.scatter(x_test, y_test)
 
 # MCMC
 
-Using MCMC we can sample local regions instead of iteratively drawing samples from each posterior conditional density $p(f_i| f_{i},y)$ seperately. If $f_k$ are function points in region $k$. Then we can propose values from the conditional GP prior $Q(f^{t}|f^{t-1})= p(f_k^{t} | f_{-k}^{t-1})$. The proposed points are accepted with probability $\min(1,A)$ where
+Using MCMC we can sample local regions instead of iteratively drawing samples from each posterior conditional density $p(f_i| f_{i},y)$ separately. If $f_k$ are function points in the region $k$. Then we can propose values from the conditional GP prior $Q(f^{t}|f^{t-1})= p(f_k^{t} | f_{-k}^{t-1})$. The proposed points are accepted with probability $\min(1,A)$ where
 
 $$
 \begin{split}
@@ -363,7 +365,8 @@ A &= \frac{p(f^t | y)/Q(f^t|f^{t-1})}{p(f^{t-1} | y)/Q(f^{t-1}|f^{t})} \\\\
 \end{split}
 $$
 
-I like to think that we are contitioning on $f_{-k}^t = f_{-k}^{t-1}$ and the we are taking $t \gets tn_k$ steps where $n_k$ is the number of regions.
+I like to think that we are conditioning on $f_{-k}^t = f_{-k}^{t-1}$ and that we are taking $t \gets tn_k$ steps where $n_k$ is the number of regions.
+
 
 
 ```python
@@ -416,8 +419,7 @@ np.mean(r,0)
            0.505 , 0.505 , 0.505 , 0.505 ])
 
 
-
-More rejections at end, might to increase acceptance we increase rejections at endpoints. We can also plot traceplot of one $f_i$
+We can also plot traceplot of one $f_i$
 
 
 ```python
@@ -430,7 +432,7 @@ plt.plot(range(B+1), f[:,3])
     
 
 
-Very autocorrelated, might have to do thinning, test other regions, increase regularization
+Very autocorrelated, might have to do thinning, test other regions, increase regularization etc..
 
 
 ```python
@@ -476,9 +478,6 @@ plt.plot(x_test,sigma(f_m_mcmc), label = "MCMC")
 plt.scatter(x_test, y_test)
 plt.legend()
 ```
-
-
-
 
 
     
