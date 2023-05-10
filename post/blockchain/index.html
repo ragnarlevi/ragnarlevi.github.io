@@ -1,0 +1,370 @@
+<html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Ragnar - Proof-of-Work and Proof-of-Stake</title><meta content="blockchain" name=keywords><meta content="Ragnar - The purpose of this notebook is to look at proof of work blockchain and proof of stake blockchain in a very primitive manner.
+We start with defining transactions and block objects for the PoW and PoS
+from dataclasses import dataclass import json from hashlib import sha256 from datetime import datetime from dataclasses import asdict import numpy as np import time @dataclass class Transaction: sender: str receiver: str amount: float @dataclass class Pow_Block: version: int timestamp: float nonce: int difficulty: int previous_hash: str transactions: list[Transaction] @dataclass class Pos_Block: version: int timestamp: float validator: str previous_hash: str transactions: list[Transaction] Proof of Work In proof of work, miners are competing in finding the so called nonce (number only used once) that satisfies a certain difficulty." name=description><meta name=viewport content="width=device-width,initial-scale=1"><link rel=stylesheet href=/layui/css/layui.css><link rel=stylesheet href=/self/css/default.css><script src=/layui/layui.js></script>
+<link rel=stylesheet async href=/self/css/markdown.min.css><link rel=stylesheet async href=/self/css/gallery.css><script src=https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin=anonymous></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css integrity="sha256-eZrrJcwDc/3uDhsdt61sL2oOBY362qM3lon1gyExkL0=" crossorigin=anonymous><script async src=https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js integrity="sha256-h2tMEmhemR2IN4wbbdNjj9LaDIjzwk2hralQwfJmBOE=" crossorigin=anonymous></script></head><body><header><script type=text/x-mathjax-config>
+      MathJax.Hub.Config({"HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"], linebreaks: { automatic:true }, EqnChunk: (MathJax.Hub.Browser.isMobile ? 10 : 50) },
+          tex2jax: { inlineMath: [ ["$", "$"], ["\\(", "\\)"] ], displayMath: [ ["$$","$$"], ["\\[", "\\]"] ], processEscapes: true, ignoreClass: "tex2jax_ignore|dno" },
+          TeX: {  noUndefined: { attributes: { mathcolor: "red", mathbackground: "#FFEEEE", mathsize: "90%" } } },
+          messageStyle: "none"
+      });
+  </script><script type=text/javascript src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script></header><header class="layui-header layui-bg-cyan"><a class=nav-self-logo href=/>Ragnar</a><ul class="layui-nav layui-layout-right layui-bg-cyan" lay-filter><li class=layui-nav-item id=nav_big><a href=/publications/>Publications</a></li><li class=layui-nav-item id=nav_big><a href=/post/>Posts</a></li><li class=layui-nav-item id=nav_big><a href=/about/>About</a></li><li class=layui-nav-item id=nav_small><a href=javascript:;><i class="layui-icon layui-icon-app" style=font-size:24px></i></a><dl class=layui-nav-child><dd><a href=/Publications/>Publications</a></dd><dd><a href=/post/>Posts</a></dd><dd><a href=/about/>About</a></dd></dl></li></ul></header><script>layui.use("element",function(){var e=layui.element})</script><div id=content style=min-height:80%><div class=layui-container style=margin-bottom:10px><div class="layui-row layui-col-space10"><div class="layui-col-md8 layui-col-sm12 layui-col-xs12"><div class="layui-card single-card"><br><blockquote class="self-elem-quote self-elem-quote-bg-red markdown-body single-title"><h1>Proof-of-Work and Proof-of-Stake</h1><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<span>2023-05-10</span>
+<i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
+<a href=/tags/blockchain/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>blockchain</span></a></h3></blockquote><div class="layui-card-body markdown-body single-content"><p>The purpose of this notebook is to look at proof of work blockchain and proof of stake blockchain in a very primitive manner.</p><p>We start with defining transactions and block objects for the PoW and PoS</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#f92672>from</span> dataclasses <span style=color:#f92672>import</span> dataclass
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> json
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> hashlib <span style=color:#f92672>import</span> sha256
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> datetime <span style=color:#f92672>import</span> datetime
+</span></span><span style=display:flex><span><span style=color:#f92672>from</span> dataclasses <span style=color:#f92672>import</span> asdict
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> numpy <span style=color:#66d9ef>as</span> np
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> time
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>@dataclass</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>class</span> <span style=color:#a6e22e>Transaction</span>:
+</span></span><span style=display:flex><span>  sender: str
+</span></span><span style=display:flex><span>  receiver: str
+</span></span><span style=display:flex><span>  amount: float
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>@dataclass</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>class</span> <span style=color:#a6e22e>Pow_Block</span>:
+</span></span><span style=display:flex><span>  version: int
+</span></span><span style=display:flex><span>  timestamp: float
+</span></span><span style=display:flex><span>  nonce: int
+</span></span><span style=display:flex><span>  difficulty: int
+</span></span><span style=display:flex><span>  previous_hash: str
+</span></span><span style=display:flex><span>  transactions: list[Transaction]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>@dataclass</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>class</span> <span style=color:#a6e22e>Pos_Block</span>:
+</span></span><span style=display:flex><span>  version: int
+</span></span><span style=display:flex><span>  timestamp: float
+</span></span><span style=display:flex><span>  validator: str
+</span></span><span style=display:flex><span>  previous_hash: str
+</span></span><span style=display:flex><span>  transactions: list[Transaction]
+</span></span></code></pre></div><h1 id=proof-of-work>Proof of Work</h1><p>In proof of work, miners are competing in finding the so called nonce (number only used once) that satisfies a certain difficulty. If the nonce generates a number lower than the difficulty number, the nonce is valid and the miner who found it wins and can claim the rewards.</p><p>The nonce generates a hash that is converted to a number. Call that number $A$. The difficulty generates a number which we call $B$. If $A&lt;B$, nonce is valid.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>HEX_BASE_TO_NUMBER <span style=color:#f92672>=</span> <span style=color:#ae81ff>16</span>
+</span></span><span style=display:flex><span>DIFFICULTY <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span><span style=color:#75715e>#PREV_BLOCK_HASH = &#34;68ffd13b24f9d73399a80aad9de06f676001fed56648314526cd23a4d18fef16&#34;</span>
+</span></span><span style=display:flex><span>TRANSACTIONS <span style=color:#f92672>=</span> (
+</span></span><span style=display:flex><span>    Transaction(<span style=color:#e6db74>&#34;sender1&#34;</span>, <span style=color:#e6db74>&#34;receiver1&#34;</span>, <span style=color:#ae81ff>1</span>),
+</span></span><span style=display:flex><span>    Transaction(<span style=color:#e6db74>&#34;sender2&#34;</span>, <span style=color:#e6db74>&#34;receiver2&#34;</span>, <span style=color:#ae81ff>0.5</span>),
+</span></span><span style=display:flex><span>    Transaction(<span style=color:#e6db74>&#34;sender3&#34;</span>, <span style=color:#e6db74>&#34;receiver3&#34;</span>, <span style=color:#ae81ff>2.7</span>),
+</span></span><span style=display:flex><span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>create_block_pow</span>(nonce: int, difficulty: int, transactions: tuple, previous_hash) <span style=color:#f92672>-&gt;</span> Pow_Block:
+</span></span><span style=display:flex><span>    cur_timestamp <span style=color:#f92672>=</span> datetime<span style=color:#f92672>.</span>now()<span style=color:#f92672>.</span>timestamp()
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> Pow_Block(
+</span></span><span style=display:flex><span>        version<span style=color:#f92672>=</span><span style=color:#ae81ff>1</span>,
+</span></span><span style=display:flex><span>        timestamp<span style=color:#f92672>=</span>cur_timestamp,
+</span></span><span style=display:flex><span>        nonce<span style=color:#f92672>=</span>nonce,
+</span></span><span style=display:flex><span>        previous_hash<span style=color:#f92672>=</span>previous_hash,
+</span></span><span style=display:flex><span>        difficulty<span style=color:#f92672>=</span>difficulty,
+</span></span><span style=display:flex><span>        transactions<span style=color:#f92672>=</span>transactions
+</span></span><span style=display:flex><span>    )
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>encode_block_pow</span>(block: Pow_Block) <span style=color:#f92672>-&gt;</span> str:
+</span></span><span style=display:flex><span>    encoded_block <span style=color:#f92672>=</span> json<span style=color:#f92672>.</span>dumps(asdict(block))<span style=color:#f92672>.</span>encode()
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> sha256(sha256(encoded_block)<span style=color:#f92672>.</span>digest())<span style=color:#f92672>.</span>hexdigest()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>calculate_hash_pow</span>(nonce: int, transactions) <span style=color:#f92672>-&gt;</span> str:
+</span></span><span style=display:flex><span>    block <span style=color:#f92672>=</span> encode_block_pow(nonce, DIFFICULTY, transactions)
+</span></span><span style=display:flex><span>    encoded_block_hash <span style=color:#f92672>=</span> encode_block_pow(block)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> encoded_block_hash
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>BYTE_IN_BITS <span style=color:#f92672>=</span> <span style=color:#ae81ff>256</span>
+</span></span><span style=display:flex><span>HEX_BASE_TO_NUMBER <span style=color:#f92672>=</span> <span style=color:#ae81ff>16</span>
+</span></span><span style=display:flex><span>SECONDS_TO_EXPIRE <span style=color:#f92672>=</span> <span style=color:#ae81ff>20</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>GENESIS_BLOCK <span style=color:#f92672>=</span> Pow_Block(
+</span></span><span style=display:flex><span>    version<span style=color:#f92672>=</span><span style=color:#ae81ff>1</span>,
+</span></span><span style=display:flex><span>    timestamp<span style=color:#f92672>=</span><span style=color:#ae81ff>1231006505</span>,
+</span></span><span style=display:flex><span>    difficulty<span style=color:#f92672>=</span><span style=color:#ae81ff>1</span>,
+</span></span><span style=display:flex><span>    nonce<span style=color:#f92672>=</span><span style=color:#ae81ff>42</span>,
+</span></span><span style=display:flex><span>    previous_hash<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f&#34;</span>,
+</span></span><span style=display:flex><span>    transactions<span style=color:#f92672>=</span>(Transaction(<span style=color:#e6db74>&#34;Satoshi Nakamoto&#34;</span>, <span style=color:#e6db74>&#34;Satoshi Nakamoto&#34;</span>, <span style=color:#ae81ff>50</span>),)
+</span></span><span style=display:flex><span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>calculate_difficulty_target</span>(difficulty_bits: int) <span style=color:#f92672>-&gt;</span> int:
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#ae81ff>2</span> <span style=color:#f92672>**</span> (BYTE_IN_BITS <span style=color:#f92672>-</span> difficulty_bits)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>class</span> <span style=color:#a6e22e>Pow_Blockchain</span>:
+</span></span><span style=display:flex><span>    VERSION <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span>    DIFFICULTY <span style=color:#f92672>=</span> <span style=color:#ae81ff>10</span>
+</span></span><span style=display:flex><span>    MINUTES_TOLERANCE <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>def</span> __init__(self):
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>chain <span style=color:#f92672>=</span> [GENESIS_BLOCK]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>def</span> <span style=color:#a6e22e>get_last_block</span>(self) <span style=color:#f92672>-&gt;</span> Pow_Block:
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> self<span style=color:#f92672>.</span>chain[<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>]
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>def</span> <span style=color:#a6e22e>add_block</span>(self, block: Pow_Block) <span style=color:#f92672>-&gt;</span> bool:
+</span></span><span style=display:flex><span>        is_valid <span style=color:#f92672>=</span> self<span style=color:#f92672>.</span>_validate_block(block)
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> is_valid:
+</span></span><span style=display:flex><span>            self<span style=color:#f92672>.</span>chain<span style=color:#f92672>.</span>append(block)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> is_valid
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>def</span> <span style=color:#a6e22e>get_difficulty</span>(self) <span style=color:#f92672>-&gt;</span> int:
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> self<span style=color:#f92672>.</span>DIFFICULTY
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>def</span> <span style=color:#a6e22e>_validate_block</span>(self, candidate: Pow_Block) <span style=color:#f92672>-&gt;</span> bool:
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> candidate<span style=color:#f92672>.</span>version <span style=color:#f92672>!=</span> self<span style=color:#f92672>.</span>VERSION:
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>False</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        last_block <span style=color:#f92672>=</span> self<span style=color:#f92672>.</span>get_last_block()
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> candidate<span style=color:#f92672>.</span>previous_hash <span style=color:#f92672>!=</span> encode_block_pow(last_block):
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>False</span>
+</span></span><span style=display:flex><span>        
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> candidate<span style=color:#f92672>.</span>difficulty <span style=color:#f92672>!=</span> self<span style=color:#f92672>.</span>DIFFICULTY:
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>False</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        candidate_hash <span style=color:#f92672>=</span> encode_block_pow(candidate)
+</span></span><span style=display:flex><span>        candidate_decimal <span style=color:#f92672>=</span> int(candidate_hash, HEX_BASE_TO_NUMBER)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        target <span style=color:#f92672>=</span> calculate_difficulty_target(self<span style=color:#f92672>.</span>DIFFICULTY)
+</span></span><span style=display:flex><span>        is_block_valid <span style=color:#f92672>=</span> candidate_decimal <span style=color:#f92672>&lt;</span> target
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> is_block_valid
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>mine_proof_of_work</span>(nonce: int, difficulty: int, prev_hash: str, transactions:tuple) <span style=color:#f92672>-&gt;</span> tuple[bool, Pow_Block]:
+</span></span><span style=display:flex><span>    block <span style=color:#f92672>=</span> create_block_pow(nonce, difficulty, transactions, prev_hash)
+</span></span><span style=display:flex><span>    encoded_block <span style=color:#f92672>=</span> encode_block_pow(block)
+</span></span><span style=display:flex><span>    block_encoded_as_number <span style=color:#f92672>=</span> int(encoded_block, HEX_BASE_TO_NUMBER)
+</span></span><span style=display:flex><span>    decimal_target <span style=color:#f92672>=</span> calculate_difficulty_target(difficulty)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> block_encoded_as_number <span style=color:#f92672>&lt;</span> decimal_target:
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>True</span>, block
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>False</span>, block
+</span></span></code></pre></div><p>Start blockchain</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#f92672>import</span> numpy <span style=color:#66d9ef>as</span> np
+</span></span><span style=display:flex><span>pow_blockchain <span style=color:#f92672>=</span> Pow_Blockchain()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>nonce <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>
+</span></span><span style=display:flex><span>start_time <span style=color:#f92672>=</span> time<span style=color:#f92672>.</span>time()
+</span></span><span style=display:flex><span>found <span style=color:#f92672>=</span> <span style=color:#66d9ef>False</span>
+</span></span><span style=display:flex><span>prev_hash <span style=color:#f92672>=</span> encode_block_pow(pow_blockchain<span style=color:#f92672>.</span>get_last_block())
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(<span style=color:#ae81ff>10</span>):
+</span></span><span style=display:flex><span>    nonce <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>
+</span></span><span style=display:flex><span>    start_time <span style=color:#f92672>=</span> time<span style=color:#f92672>.</span>time()
+</span></span><span style=display:flex><span>    found <span style=color:#f92672>=</span> <span style=color:#66d9ef>False</span>
+</span></span><span style=display:flex><span>    prev_hash <span style=color:#f92672>=</span> encode_block_pow(pow_blockchain<span style=color:#f92672>.</span>get_last_block())
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>while</span> <span style=color:#f92672>not</span> found:
+</span></span><span style=display:flex><span>        found, block <span style=color:#f92672>=</span> mine_proof_of_work(nonce, pow_blockchain<span style=color:#f92672>.</span>get_difficulty(), prev_hash, Transaction(<span style=color:#e6db74>&#34;Satoshi Nakamoto&#34;</span>, <span style=color:#e6db74>&#34;Satoshi Nakamoto&#34;</span>, np<span style=color:#f92672>.</span>random<span style=color:#f92672>.</span>uniform()))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> found:
+</span></span><span style=display:flex><span>            pow_blockchain<span style=color:#f92672>.</span>add_block(block)
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>else</span>:
+</span></span><span style=display:flex><span>            nonce <span style=color:#f92672>+=</span> <span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        end_time <span style=color:#f92672>=</span> time<span style=color:#f92672>.</span>time()
+</span></span><span style=display:flex><span>        elapsed_time <span style=color:#f92672>=</span> end_time <span style=color:#f92672>-</span> start_time
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> elapsed_time <span style=color:#f92672>&gt;</span> SECONDS_TO_EXPIRE:
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>raise</span> <span style=color:#a6e22e>TimeoutError</span>(
+</span></span><span style=display:flex><span>                <span style=color:#e6db74>f</span><span style=color:#e6db74>&#34;Couldn&#39;t find a block within the given timeframe&#34;</span>
+</span></span><span style=display:flex><span>            )
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#66d9ef>for</span> block <span style=color:#f92672>in</span> pow_blockchain<span style=color:#f92672>.</span>chain:
+</span></span><span style=display:flex><span>    print(block)
+</span></span><span style=display:flex><span>    print(<span style=color:#e6db74>&#34;</span><span style=color:#ae81ff>\n</span><span style=color:#e6db74>&#34;</span>)
+</span></span></code></pre></div><pre><code>Pow_Block(version=1, timestamp=1231006505, nonce=42, difficulty=1, previous_hash='000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f', transactions=(Transaction(sender='Satoshi Nakamoto', receiver='Satoshi Nakamoto', amount=50),))
+
+
+Pow_Block(version=1, timestamp=1683676835.03425, nonce=1271, difficulty=10, previous_hash='629982432748d68179f7f81e85b67925a59fb2b5082eeb5f6fc9257028204ea4', transactions=Transaction(sender='Satoshi Nakamoto', receiver='Satoshi Nakamoto', amount=0.04643169129473279))
+
+
+Pow_Block(version=1, timestamp=1683676835.045253, nonce=533, difficulty=10, previous_hash='003e03f4189866a540edccaf5a8854a5f611a7707ff9c0df572c41f1e098fb03', transactions=Transaction(sender='Satoshi Nakamoto', receiver='Satoshi Nakamoto', amount=0.23683450574403841))
+
+
+Pow_Block(version=1, timestamp=1683676835.091262, nonce=2219, difficulty=10, previous_hash='003abd0d23f25fc664171fbc7f6a25998ec28ee204b31cd45b74ff2c0ccf4309', transactions=Transaction(sender='Satoshi Nakamoto', receiver='Satoshi Nakamoto', amount=0.30504848451670386))
+
+
+Pow_Block(version=1, timestamp=1683676835.103265, nonce=580, difficulty=10, previous_hash='00274768d89c7f4372eb15ff34a3c0c92da8f7acc98d37bce46c0dfbbcefad61', transactions=Transaction(sender='Satoshi Nakamoto', receiver='Satoshi Nakamoto', amount=0.8891598058714782))
+
+
+Pow_Block(version=1, timestamp=1683676835.105266, nonce=96, difficulty=10, previous_hash='0033bfbdecf964db73b45fcdf19b0255143799583a4def154570cd1f859e8358', transactions=Transaction(sender='Satoshi Nakamoto', receiver='Satoshi Nakamoto', amount=0.21893269713324048))
+
+
+Pow_Block(version=1, timestamp=1683676835.12527, nonce=993, difficulty=10, previous_hash='001436dd4a0710ee2dc4f443fe3ae851eaec7df44f77afdd4f86785fcfa197b4', transactions=Transaction(sender='Satoshi Nakamoto', receiver='Satoshi Nakamoto', amount=0.13291033703083))
+
+
+Pow_Block(version=1, timestamp=1683676835.135273, nonce=486, difficulty=10, previous_hash='003037d579bb7aeef3befb4c281050ed0d2703d7a70b847b4f471e8417d59d59', transactions=Transaction(sender='Satoshi Nakamoto', receiver='Satoshi Nakamoto', amount=0.138879958758775))
+
+
+Pow_Block(version=1, timestamp=1683676835.162279, nonce=1286, difficulty=10, previous_hash='000453475413a3c6c46c7bfa7c8a63fe5b068ed9d1b1e80a213d9dc166d220f8', transactions=Transaction(sender='Satoshi Nakamoto', receiver='Satoshi Nakamoto', amount=0.6620923154562147))
+
+
+Pow_Block(version=1, timestamp=1683676835.189285, nonce=1339, difficulty=10, previous_hash='0020b8db96297591627d09101ab738fd167e3d98821c6200e60915366e8adc47', transactions=Transaction(sender='Satoshi Nakamoto', receiver='Satoshi Nakamoto', amount=0.24158860154623452))
+
+
+Pow_Block(version=1, timestamp=1683676835.198287, nonce=447, difficulty=10, previous_hash='002b019a97422540e7523a898a40c451f7aa9acd1796fdcd0a5fc2a1e3d97d78', transactions=Transaction(sender='Satoshi Nakamoto', receiver='Satoshi Nakamoto', amount=0.5398827320781564))
+</code></pre><h1 id=proof-of-stake>Proof of Stake</h1><p>In Proof of Stake, miners/validators are required to stake their tokens/balance in order to be chosen as the next block creator. Therefore, the miner that stakes the most amount of its currency has the highest chance of being chosen as the leader and creating the next block.</p><p>Compared to Proof of Work, where miners compete with each other in terms of computation power, here they compete in terms of currency.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>GENESIS_BLOCK_POS <span style=color:#f92672>=</span> Pos_Block(
+</span></span><span style=display:flex><span>    version<span style=color:#f92672>=</span><span style=color:#ae81ff>1</span>,
+</span></span><span style=display:flex><span>    timestamp<span style=color:#f92672>=</span><span style=color:#ae81ff>1231006505</span>,
+</span></span><span style=display:flex><span>    previous_hash<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f&#34;</span>,
+</span></span><span style=display:flex><span>    validator<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;Louie&#39;</span>,
+</span></span><span style=display:flex><span>    transactions<span style=color:#f92672>=</span>Transaction(<span style=color:#e6db74>&#39;&#39;</span>,<span style=color:#e6db74>&#39;&#39;</span>,<span style=color:#ae81ff>0</span>)
+</span></span><span style=display:flex><span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>encode_block_pos</span>(block):
+</span></span><span style=display:flex><span>    <span style=color:#e6db74>&#34;&#34;&#34;
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>    calcuate block sha256 hash value
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>    &#34;&#34;&#34;</span>
+</span></span><span style=display:flex><span>    record  <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;&#34;</span><span style=color:#f92672>.</span>join([
+</span></span><span style=display:flex><span>        str(block<span style=color:#f92672>.</span>version),
+</span></span><span style=display:flex><span>        str(block<span style=color:#f92672>.</span>timestamp),
+</span></span><span style=display:flex><span>        block<span style=color:#f92672>.</span>validator,
+</span></span><span style=display:flex><span>        block<span style=color:#f92672>.</span>previous_hash
+</span></span><span style=display:flex><span>    ])
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> sha256(record<span style=color:#f92672>.</span>encode())<span style=color:#f92672>.</span>hexdigest()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>class</span> <span style=color:#a6e22e>Pos_Blockchain</span>:
+</span></span><span style=display:flex><span>    VERSION <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>def</span> __init__(self):
+</span></span><span style=display:flex><span>        self<span style=color:#f92672>.</span>chain <span style=color:#f92672>=</span> [GENESIS_BLOCK_POS]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>def</span> <span style=color:#a6e22e>get_last_block</span>(self) <span style=color:#f92672>-&gt;</span> Pos_Block:
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> self<span style=color:#f92672>.</span>chain[<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>]
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>def</span> <span style=color:#a6e22e>add_block</span>(self, block: Pos_Block) <span style=color:#f92672>-&gt;</span> bool:
+</span></span><span style=display:flex><span>        is_valid <span style=color:#f92672>=</span> self<span style=color:#f92672>.</span>_validate_block(block)
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> is_valid:
+</span></span><span style=display:flex><span>            self<span style=color:#f92672>.</span>chain<span style=color:#f92672>.</span>append(block)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> is_valid
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>def</span> <span style=color:#a6e22e>get_difficulty</span>(self) <span style=color:#f92672>-&gt;</span> int:
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> self<span style=color:#f92672>.</span>DIFFICULTY
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>def</span> <span style=color:#a6e22e>_validate_block</span>(self, candidate: Pos_Block) <span style=color:#f92672>-&gt;</span> bool:
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> candidate<span style=color:#f92672>.</span>version <span style=color:#f92672>!=</span> self<span style=color:#f92672>.</span>VERSION:
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>False</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        last_block <span style=color:#f92672>=</span> self<span style=color:#f92672>.</span>get_last_block()
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> candidate<span style=color:#f92672>.</span>previous_hash <span style=color:#f92672>!=</span> encode_block_pos(last_block):
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>False</span>
+</span></span><span style=display:flex><span>        
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>True</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>create_block_pos</span>(transactions: tuple, validator: str, previous_hash) <span style=color:#f92672>-&gt;</span> Pow_Block:
+</span></span><span style=display:flex><span>        cur_timestamp <span style=color:#f92672>=</span> datetime<span style=color:#f92672>.</span>now()<span style=color:#f92672>.</span>timestamp()
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> Pos_Block(
+</span></span><span style=display:flex><span>            version<span style=color:#f92672>=</span><span style=color:#ae81ff>1</span>,
+</span></span><span style=display:flex><span>            timestamp<span style=color:#f92672>=</span>cur_timestamp,
+</span></span><span style=display:flex><span>            validator<span style=color:#f92672>=</span>validator,
+</span></span><span style=display:flex><span>            previous_hash<span style=color:#f92672>=</span>previous_hash,
+</span></span><span style=display:flex><span>            transactions<span style=color:#f92672>=</span>transactions
+</span></span><span style=display:flex><span>        )
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>lottery_proof_of_stake</span>(validators, block, prev_hash, transactions):
+</span></span><span style=display:flex><span>    participants <span style=color:#f92672>=</span> [user[<span style=color:#e6db74>&#39;id&#39;</span>] <span style=color:#66d9ef>for</span> user <span style=color:#f92672>in</span> validators]
+</span></span><span style=display:flex><span>    participants_amt <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array([user[<span style=color:#e6db74>&#39;stake&#39;</span>] <span style=color:#66d9ef>for</span> user <span style=color:#f92672>in</span> validators])
+</span></span><span style=display:flex><span>    total_amt <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>sum(participants_amt)
+</span></span><span style=display:flex><span>    winner <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>random<span style=color:#f92672>.</span>choice(a <span style=color:#f92672>=</span> participants, p <span style=color:#f92672>=</span> participants_amt<span style=color:#f92672>/</span>total_amt)
+</span></span><span style=display:flex><span>    block <span style=color:#f92672>=</span> create_block_pos(transactions, winner, prev_hash)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> block
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>validators <span style=color:#f92672>=</span> [{<span style=color:#e6db74>&#39;id&#39;</span>:<span style=color:#e6db74>&#39;Huey&#39;</span>, <span style=color:#e6db74>&#39;stake&#39;</span>:<span style=color:#ae81ff>33</span>}, {<span style=color:#e6db74>&#39;id&#39;</span>:<span style=color:#e6db74>&#39;Dewey&#39;</span>, <span style=color:#e6db74>&#39;stake&#39;</span>:<span style=color:#ae81ff>10</span>}, {<span style=color:#e6db74>&#39;id&#39;</span>:<span style=color:#e6db74>&#39;Louie&#39;</span>, <span style=color:#e6db74>&#39;stake&#39;</span>:<span style=color:#ae81ff>99</span>}]
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>pos_blockchain <span style=color:#f92672>=</span> Pos_Blockchain()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>start_time <span style=color:#f92672>=</span> time<span style=color:#f92672>.</span>time()
+</span></span><span style=display:flex><span>found <span style=color:#f92672>=</span> <span style=color:#66d9ef>False</span>
+</span></span><span style=display:flex><span>prev_hash <span style=color:#f92672>=</span> encode_block_pos(pos_blockchain<span style=color:#f92672>.</span>get_last_block())
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(<span style=color:#ae81ff>10</span>):
+</span></span><span style=display:flex><span>    prev_hash <span style=color:#f92672>=</span> encode_block_pos(pos_blockchain<span style=color:#f92672>.</span>get_last_block()) 
+</span></span><span style=display:flex><span>    block <span style=color:#f92672>=</span> lottery_proof_of_stake(validators, block, prev_hash, Transaction(<span style=color:#e6db74>&#34;Satoshi Nakamoto&#34;</span>, <span style=color:#e6db74>&#34;Satoshi Nakamoto&#34;</span>, <span style=color:#ae81ff>100</span><span style=color:#f92672>*</span>np<span style=color:#f92672>.</span>random<span style=color:#f92672>.</span>uniform()))
+</span></span><span style=display:flex><span>    pos_blockchain<span style=color:#f92672>.</span>add_block(block)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>for</span> block <span style=color:#f92672>in</span> pos_blockchain<span style=color:#f92672>.</span>chain:
+</span></span><span style=display:flex><span>    print(block)
+</span></span><span style=display:flex><span>    print(<span style=color:#e6db74>&#34;</span><span style=color:#ae81ff>\n</span><span style=color:#e6db74>&#34;</span>)
+</span></span></code></pre></div><pre><code>Pos_Block(version=1, timestamp=1231006505, validator='Louie', previous_hash='000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f', transactions=Transaction(sender='', receiver='', amount=0))
+
+
+Pos_Block(version=1, timestamp=1683676866.845412, validator='Dewey', previous_hash='df4413f8c82d31a43997633f241f3969788d7870410653a04abfa246335dd429', transactions=Transaction(sender='Satoshi Nakamoto', receiver='Satoshi Nakamoto', amount=74.1256835500038))
+
+
+Pos_Block(version=1, timestamp=1683676866.845412, validator='Louie', previous_hash='b94d10d3a11af4e0c95b62f46883935fdccd761924ef849c99805f45ff99fb0f', transactions=Transaction(sender='Satoshi Nakamoto', receiver='Satoshi Nakamoto', amount=24.151181171183932))
+
+
+Pos_Block(version=1, timestamp=1683676866.845412, validator='Louie', previous_hash='c4886eca584e50da1dd120fe8d242b1d06eb295361974d00565fa175e87674c4', transactions=Transaction(sender='Satoshi Nakamoto', receiver='Satoshi Nakamoto', amount=79.4071220119231))
+
+
+Pos_Block(version=1, timestamp=1683676866.845412, validator='Louie', previous_hash='427e88cae6b25a7e648efced676cea59cbbf1f6141fee8cc17884b2dcc3905f3', transactions=Transaction(sender='Satoshi Nakamoto', receiver='Satoshi Nakamoto', amount=35.83240492783906))
+
+
+Pos_Block(version=1, timestamp=1683676866.845412, validator='Louie', previous_hash='175e1d1f82a454f73cab7175bd9ccd1f69bab8a31e1bcb0b5437768a15e74441', transactions=Transaction(sender='Satoshi Nakamoto', receiver='Satoshi Nakamoto', amount=64.68286159916468))
+
+
+Pos_Block(version=1, timestamp=1683676866.845412, validator='Huey', previous_hash='3ea4c3fbc5ccd3e7a513717705874f06d3db4d70ca33938cb546239d55dcfdad', transactions=Transaction(sender='Satoshi Nakamoto', receiver='Satoshi Nakamoto', amount=66.83634658085363))
+
+
+Pos_Block(version=1, timestamp=1683676866.845412, validator='Louie', previous_hash='78bf9ae2cc5b67a8f4f773820fed55bf6c6036c7f3687d60f9f14930e6588d89', transactions=Transaction(sender='Satoshi Nakamoto', receiver='Satoshi Nakamoto', amount=66.79188204734481))
+
+
+Pos_Block(version=1, timestamp=1683676866.845412, validator='Louie', previous_hash='2202892e13eb974736cfbf9e77138f7142996ab0ebc3b572571e7596eeef6070', transactions=Transaction(sender='Satoshi Nakamoto', receiver='Satoshi Nakamoto', amount=77.54172125698501))
+
+
+Pos_Block(version=1, timestamp=1683676866.845412, validator='Louie', previous_hash='ea9e218d1e7dbdca541796500a13b80e2e039f73a04f17080a16683b74fc2e04', transactions=Transaction(sender='Satoshi Nakamoto', receiver='Satoshi Nakamoto', amount=15.281043236113367))
+
+
+Pos_Block(version=1, timestamp=1683676866.845412, validator='Huey', previous_hash='3ba3b8089dc65d0b1336aa60e7e854d39d035150dc728f735737642e0b4b9bce', transactions=Transaction(sender='Satoshi Nakamoto', receiver='Satoshi Nakamoto', amount=15.538494296269745))
+</code></pre></div></div></div><div class="layui-col-md4 layui-col-sm12 layui-col-xs12"><div class="layui-card single-card"><h2 class=single-title>Recent Posts</h2><div style=margin-left:10px><blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px><a href=/post/blockchain/><h3>Proof-of-Work and Proof-of-Stake</h3></a><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<span>2023-05-10</span>
+<i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
+<a href=/tags/blockchain/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>blockchain</span></a></h3></blockquote></div><div style=margin-left:10px><blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px><a href=/post/gp_fit_algo/><h3>Gaussian Process Classification</h3></a><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<span>2022-09-18</span>
+<i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
+<a href=/tags/classification/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Classification</span></a>
+<a href=/tags/kernel/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Kernel</span></a></h3></blockquote></div><div style=margin-left:10px><blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px><a href=/post/depgp/><h3>Dependent Gaussian Processes</h3></a><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<span>2022-06-30</span>
+<i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
+<a href=/tags/kernel/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Kernel</span></a></h3></blockquote></div><div style=margin-left:10px><blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px><a href=/post/nnfun/><h3>Neural Networks for Insurance Pricing</h3></a><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<span>2022-04-11</span>
+<i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
+<a href=/tags/model/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Model</span></a>
+<a href=/tags/neural-network/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Neural Network</span></a>
+<a href=/tags/insurance/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Insurance</span></a></h3></blockquote></div><div style=margin-left:10px><blockquote class="self-elem-quote self-elem-quote-bg-red" style=background-color:#fff;margin-top:10px><a href=/post/glm/><h3>Generalized Linear Models</h3></a><h3 style=margin-top:10px;margin-bottom:10px><i class="layui-icon layui-icon-date" style=font-size:28px;vertical-align:-2px></i>
+<span>2022-03-02</span>
+<i class="layui-icon layui-icon-tabs" style=font-size:22px;vertical-align:1px;margin-right:2px></i>
+<a href=/tags/model/><span class="layui-badge layui-bg-orange" style=vertical-align:2px>Model</span></a></h3></blockquote></div><br></div></div></div></div></div><footer><div class=layui-container><p class=copyright>&copy; Powered by <a href=https://gohugo.io style=color:#fff>Hugo</a>, <a href=https://github.com/ertuil/erblog style=color:#fff>Erblog</a> and <a href=https://github.com/vlunot/nb2hugo style=color:#fff>nb2hugo</a>.</p></div></footer></body></html>
