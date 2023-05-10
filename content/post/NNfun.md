@@ -2,7 +2,7 @@
 title = "Neural Networks for Insurance Pricing"
 date = "2022-04-11"
 author = "Ragnar Levi Gudmundarson"
-tags = ["Model"]
+tags = ["Model", "Neural Network", "Insurance"]
 +++
 
 In this notebook we will be looking at a typicall insurance pricing [data set](https://www.openml.org/search?type=data&sort=runs&id=41214&status=active) and test GLM and NN models. A typical assumption is that the repsone is poisson:
